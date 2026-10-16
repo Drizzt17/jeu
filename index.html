@@ -148,8 +148,8 @@ header .hr{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
     <div><div class="row"><span>Expérience</span><b id="xpt"></b></div><div class="bar xp"><i id="xpb"></i></div></div>
     <div><div class="row"><span>Round de combat</span><b id="rdt">hors combat</b></div><div class="bar rd"><i id="rdb"></i></div></div>
     <div class="stats">
-     <div>FOR<b>17</b></div><div>DEX<b>10</b></div><div>CON<b>14</b></div>
-     <div>INT<b>8</b></div><div>SAG<b>12</b></div><div>CHA<b>14</b></div>
+     <div>FOR<b id="st_str">0</b></div><div>DEX<b id="st_dex">0</b></div><div>CON<b id="st_con">0</b></div>
+     <div>INT<b id="st_int">0</b></div><div>SAG<b id="st_sag">0</b></div><div>CHA<b id="st_cha">0</b></div>
     </div>
     <div class="row"><span>CA <b id="ac">16</b></span><span>Maîtrise <b>+2</b></span><span>Attaque <b id="atkv">+5</b></span></div>
     <div class="row"><span>Emplacements de sort</span><b id="slt"></b></div>
@@ -190,13 +190,13 @@ header .hr{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
   <aside id="right">
    <div class="card">
     <div class="abil">
-     <button id="b1"></button><button id="b2"></button><button id="b3"></button><button id="b4"></button><button id="b5"></button><button id="b6"></button><button id="b7"></button><button id="b8" hidden></button><button id="b9" hidden></button><button id="b10" hidden></button>
+     <button id="b1"></button><button id="b2"></button><button id="b3"></button><button id="b4"></button><button id="b5"></button><button id="b6"></button><button id="b7"></button><button id="b8" hidden></button><button id="b9" hidden></button><button id="b10" hidden></button><button id="b11"></button><button id="b12" hidden></button><button id="b13" hidden></button><button id="b14" hidden></button><button id="b15" hidden></button>
     </div>
    </div>
    <div class="card"><div class="row"><span>Journal de quêtes</span></div><ul class="qs" id="quests"></ul></div>
-   <div class="card" id="mmcard" hidden><div class="row"><span>Carte de Chult</span></div><canvas id="mm" width="200" height="96"></canvas></div>
+   <div class="card" id="mmcard" hidden><div class="row"><span>Carte de Chult</span></div><canvas id="mm" width="300" height="150"></canvas></div>
    <div class="card"><div class="row"><span>Son</span><button id="snd">♪ Son activé</button></div><input type="range" id="vol" min="0" max="100" value="55" aria-label="Volume"></div>
-   <div class="hint"><kbd>ZQSD</kbd>/<kbd>flèches</kbd> ou clic : se déplacer · clic sur un ennemi : le cibler (combat manuel : clic gauche dans la zone verte pour frapper) · <kbd>Espace</kbd> pause active · <kbd>Échap</kbd> menu · <kbd>E</kbd> parler · <kbd>I</kbd> inventaire · <kbd>L</kbd> repos long · <kbd>M</kbd> son · <kbd>1</kbd>-<kbd>9</kbd> capacités et sorts</div>
+   <div class="hint"><kbd>ZQSD</kbd>/<kbd>flèches</kbd> ou clic : se déplacer · clic sur un ennemi : le cibler (combat manuel : clic gauche dans la zone verte pour frapper) · <kbd>Espace</kbd> pause active · <kbd>Échap</kbd> menu · <kbd>E</kbd> parler · <kbd>I</kbd> inventaire · <kbd>L</kbd> repos long · <kbd>M</kbd> son · <kbd>0</kbd>-<kbd>9</kbd> <kbd>H</kbd> <kbd>T</kbd> <kbd>X</kbd> <kbd>V</kbd> capacités et sorts</div>
   </aside>
  </div>
 </div>
@@ -595,8 +595,9 @@ function recalc(){
   let die=w.dice.slice(),rr=0;
   if(st==='2h'){if(w.two)rr=2;else if(!sh&&!ow){die=[1,10];rr=2}}
   P.ac=(a?a.ac:10)+(st==='def'&&a?1:0)+acb+(P.conc==='faith'?2:0);
-  P.atk=5+w.bonus+atkb+bf;P.dmg=[die[0],die[1],3+w.bonus+bf+((st==='duel'&&!w.two&&!ow)?2:0)];P.rr=rr;
-  P.offw=ow?ITEMS[E.off]:null;P.offA=5+(ow?ow.bonus:0)+atkb+bf;P.offD=ow?[ow.dice[0],ow.dice[1],ow.bonus]:null;
+  const sm=Math.floor((P.stats.str-10)/2),cm=Math.floor((P.stats.cha-10)/2),swb=P.swT>0?cm:0;MOD.str=sm;MOD.con=Math.floor((P.stats.con-10)/2);MOD.cha=cm;P.smax=[0,2,2,3,3][P.level]||3;if(P.slots>P.smax)P.slots=P.smax;
+  P.atk=2+sm+w.bonus+atkb+bf+swb;P.dmg=[die[0],die[1],sm+w.bonus+bf+((st==='duel'&&!w.two&&!ow)?2:0)];P.rr=rr;
+  P.offw=ow?ITEMS[E.off]:null;P.offA=2+sm+(ow?ow.bonus:0)+atkb+bf+swb;P.offD=ow?[ow.dice[0],ow.dice[1],ow.bonus]:null;
   P.sp=54*(1+spd);P.concb=conc;P.chkb=chk;P.swampb=swamp;
   P.hmax=5*P.level+hands;if(P.hands>P.hmax)P.hands=P.hmax;
 }
@@ -753,7 +754,7 @@ function finishScreen(s){s.all=s.solids.slice();s.props.forEach(p=>{const q=PROP
 /* constructeur d'écran de jungle : ouvertures nord/sud optionnelles */
 function jsc(o){
   const U=o.up,D=o.down,top=U?[[0,0,U.x,54],[U.x+U.w,0,W-U.x-U.w,54]]:[[0,0,W,54]],bot=D?[[0,152,D.x,24],[D.x+D.w,152,W-D.x-D.w,24]]:[[0,152,W,24]];
-  const s={name:o.name,n:'Chult',jungle:true,tint:o.tint||'rgba(0,36,12,.2)',ymin:U?14:60,gapD:!!D,nb:o.nb,bld:[],props:o.props||[],solids:[...top,...bot,...(o.solids||[])],npcs:[],hot:o.hot||[],enemies:o.enemies||[],gx:o.gx,gy:o.gy,swamp:o.swamp||null,swampy:!!o.swamp,art:o.art||null,gaps:{U,D},exits:[]};
+  const s={name:o.name,n:o.omu?'Omu':'Chult',omu:!!o.omu,jungle:true,tint:o.tint||'rgba(0,36,12,.2)',ymin:U?14:60,gapD:!!D,nb:o.nb,bld:[],props:o.props||[],solids:[...top,...bot,...(o.solids||[])],npcs:o.npcs||[],hot:o.hot||[],enemies:o.enemies||[],gx:o.gx,gy:o.gy,swamp:o.swamp||null,swampy:!!o.swamp,art:o.art||null,gaps:{U,D},exits:[]};
   if(U)s.exits.push({x:U.x+4,y:0,w:U.w-8,h:36,to:U.to,tx:U.x+U.w/2,ty:146});
   if(D)s.exits.push({x:D.x+4,y:166,w:D.w-8,h:12,to:D.to,tx:D.x+D.w/2,ty:64});
   return finishScreen(s);
@@ -1218,9 +1219,158 @@ function finishDeal(d,msg){
   renderBag();
   const n=SCREENS[G.sc].npcs.find(x=>x.id==='dorval');if(n){openTalk(n);G.talk.node='ok';showNode()}
 }
+/* ---- extension de la jungle : orcs et gobelins, 5 nouveaux écrans (impasses reliées à l'existant) ---- */
+Object.assign(EDEF,{
+ gobelin:{name:'Gobelin',ac:15,hp:7,atk:4,dmg:[1,6,2],dex:2,xp:50,sp:46,reach:15,pal:{skin:'#7aa84a',body:'#6a4a2a',legs:'#3a2a1a',hair:'#2a3a1a',hat:'#5a3a1a',arm:'#7aa84a'}},
+ orc:{name:'Orc',ac:13,hp:15,atk:5,dmg:[1,12,3],dex:1,xp:100,sp:34,reach:18,pal:{skin:'#5a7a3a',body:'#4a3a3a',legs:'#2a2a2a',hair:'#1a1a1a',hat:'#3a3a40',arm:'#5a7a3a'}},
+ orcchef:{name:'Chef orc',ac:15,hp:32,atk:6,dmg:[1,12,4],dex:1,xp:200,sp:32,reach:19,pal:{skin:'#4a6a2a',body:'#7a2a24',legs:'#2a2a2a',hair:'#1a1a1a',hat:'#6a6a74',arm:'#4a6a2a'}}});
+const O1=SCREENS.length,O2=O1+1,O3=O1+2,O4=O1+3,O5=O1+4,R1=O1+5,R2=O1+6,OM1=O1+7,OM2=O1+8,OM3=O1+9,OM4=O1+10,OM5=O1+11,OM6=O1+12,OM7=O1+13;
+const sw1=[[20,86,110,50]];
+jsc({name:'Sentier des gobelins',nb:{l:N1,r:O2},gx:3,gy:0,
+ props:[{t:'tree',x:30,y:58},{t:'tree',x:120,y:60},{t:'bush',x:60,y:140},{t:'rock',x:200,y:76},{t:'bones',x:90,y:112},{t:'chest',x:206,y:112,fl:'o1'},{t:'bush',x:150,y:140}],
+ hot:[{x:196,y:112,w:30,h:20,...hazard('o1',{label:'Cache de gobelin',stat:'dex',dc:12,verb:'Désamorcer les cordes-pièges',alt:{stat:'sag',dc:12,verb:'Repérer le piège'},intro:'Un coffre grossier est ceint de ficelles tendues, reliées à des clochettes d\'os.',
+   okTxt:'Vous coupez les ficelles sans un tintement. Dans le coffre : de l\'or et une potion.',koTxt:'Les clochettes tintent ! Un gobelin surgit des fourrés.',rew:{po:35,items:['potion']},ko:hurtSpawn([2],'Ficelle piégée','gobelin',-30),doneTxt:'Le coffre est vide.'})}],
+ enemies:[{k:'gobelin',x:80,y:100},{k:'gobelin',x:150,y:90}]});
+jsc({name:'Camp gobelin',nb:{l:O1,r:-1},gx:4,gy:0,tint:'rgba(30,20,0,.22)',
+ props:[{t:'tree',x:20,y:58},{t:'tree',x:210,y:60},{t:'bones',x:70,y:120},{t:'crate',x:150,y:70},{t:'crate',x:164,y:76},{t:'rock',x:110,y:140},{t:'chest',x:200,y:110,fl:'o2'},{t:'bones',x:40,y:96}],
+ hot:[{x:190,y:110,w:34,h:20,...hazard('o2',{label:'Coffre du chef',stat:'str',dc:13,verb:'Forcer le cadenas',alt:{stat:'dex',dc:13,verb:'Crocheter la serrure'},intro:'Un lourd coffre cerclé de fer, cadenassé. Les gobelins y gardent leur butin.',
+   okTxt:'Le cadenas cède. Le coffre contient un anneau de précision et des pièces.',koTxt:'Le cadenas résiste et vous vous écorchez les doigts.',rew:{po:60,items:['anneau_prec'],xp:50},ko:()=>hurtP(rnd(4),'Écorchure'),doneTxt:'Le coffre est vide.'})}],
+ enemies:[{k:'gobelin',x:60,y:92},{k:'gobelin',x:110,y:118},{k:'gobelin',x:150,y:96},{k:'orc',x:180,y:130}]});
+jsc({name:'Gué des orcs',nb:{l:S1,r:O4},gx:3,gy:2,down:{x:104,w:48,to:R1},tint:swampTint,swamp:[[20,90,120,48]],
+ props:[{t:'reeds',x:30,y:90},{t:'reeds',x:60,y:136},{t:'tree',x:30,y:58},{t:'tree',x:190,y:58},{t:'rock',x:200,y:110},{t:'bones',x:160,y:128}],
+ hot:[],enemies:[{k:'orc',x:90,y:104},{k:'gobelin',x:170,y:100},{k:'croco',x:60,y:120}]});
+jsc({name:'Avant-poste orc',nb:{l:O3,r:-1},gx:4,gy:2,down:{x:104,w:48,to:R2},tint:'rgba(36,10,0,.24)',
+ props:[{t:'tree',x:14,y:58},{t:'crate',x:100,y:70},{t:'crate',x:114,y:74},{t:'bones',x:60,y:118},{t:'rock',x:30,y:130},{t:'chest',x:206,y:100,fl:'o4'},{t:'totem',x:150,y:62}],
+ hot:[{x:196,y:100,w:34,h:20,...hazard('o4',{label:'Trésor du chef orc',stat:'con',dc:13,verb:'Soulever la lourde dalle',alt:{stat:'str',dc:12,verb:'Pousser la dalle'},intro:'Une dalle de pierre scelle un coffre rouillé. Elle pèse une tonne.',
+   okTxt:'La dalle bascule. Le coffre renferme un anneau de vie et une bourse.',koTxt:'Vous vous froissez le dos en forçant.',rew:{po:80,items:['anneau_vie','bourse'],xp:100},ko:()=>hurtP(rnd(4)+1,'Effort violent'),doneTxt:'Le coffre est vide.'})}],
+ enemies:[{k:'orc',x:70,y:100},{k:'orc',x:130,y:124},{k:'orcchef',x:170,y:92}]});
+jsc({name:'Ossuaire du marais',nb:{l:-1,r:S2},gx:0,gy:2,tint:'rgba(10,24,8,.4)',swamp:[[40,84,150,56]],
+ props:[{t:'bones',x:50,y:100},{t:'bones',x:120,y:120},{t:'reeds',x:30,y:90},{t:'reeds',x:200,y:92},{t:'chest',x:100,y:96,fl:'o5'},{t:'rock',x:20,y:130}],
+ hot:[{x:88,y:96,w:34,h:20,...hazard('o5',{label:'Coffre enlisé',stat:'dex',dc:13,verb:'Atteindre le coffre',alt:{stat:'str',dc:13,verb:'Se frayer un chemin'},intro:'Un coffre à demi englouti dans la vase, entouré d\'ossements.',
+   okTxt:'Vous récupérez le coffre : des pièces et une gemme brute.',koTxt:'La vase vous aspire et quelque chose remue !',rew:{po:50,items:['gemme'],xp:50},ko:hurtSpawn([3],'Enlisement','zombie',24),doneTxt:'Le coffre est vide.'})}],
+ enemies:[{k:'zombie',x:70,y:116},{k:'orc',x:160,y:110},{k:'zombie',x:200,y:130}]});
+
+
+/* ====== faune de Chult : dinosaures, grenouilles géantes, kobolds, yuan-ti ====== */
+Object.assign(EDEF,{
+ compy:{name:'Compsognathus',ac:12,hp:6,atk:4,dmg:[1,4,2],dex:2,xp:25,sp:66,reach:14},
+ raptor:{name:'Vélociraptor',ac:13,hp:10,atk:4,dmg:[1,6,2],dex:2,xp:50,sp:64,reach:16},
+ deino:{name:'Déinonychus',ac:13,hp:26,atk:5,dmg:[1,8,3],dex:2,xp:200,sp:56,reach:18},
+ frog:{name:'Grenouille géante',ac:11,hp:18,atk:3,dmg:[1,6,1],dex:1,xp:50,sp:36,reach:17},
+ allo:{name:'Allosaure',ac:13,hp:45,atk:6,dmg:[2,6,4],dex:1,xp:450,sp:50,reach:22},
+ kobold:{name:'Kobold',ac:12,hp:7,atk:4,dmg:[1,4,2],dex:2,xp:25,sp:42,reach:15,pal:{skin:'#a85a3a',body:'#6a3a2a',legs:'#3a2a1a',hair:'#3a1a0a',hat:'#7a4a2a',arm:'#a85a3a'}},
+ yuanti:{name:'Yuan-ti sang-pur',ac:12,hp:30,atk:5,dmg:[1,6,3],dex:1,xp:200,sp:36,reach:17,pal:{skin:'#5a9a6a',body:'#2a4a3a',legs:'#1a2a24',hair:'#2a5a3a',arm:'#5a9a6a'}},
+ thay:{name:'Mage rouge de Thay',ac:13,hp:24,atk:5,dmg:[1,8,2],dex:1,xp:200,sp:36,reach:17,pal:{skin:'#d0a888',body:'#a82a2a',legs:'#5a1a1a',hair:'#111',hood:'#8a1a1a',arm:'#a82a2a'}}});
+function dinoSpr(col,dark,s,belly){return(c,e)=>{
+  const r=e.face==='r'||e.face==='d',d=r?1:-1,x=e.x,y=e.y,w=Math.sin(G.t*10+e.wob)>0?1:0;
+  R(c,x-9*s,y+2,18*s,3,'rgba(0,0,0,.28)');
+  R(c,x-5*s,y-6*s,10*s,6*s,col);R(c,x-4*s,y-1*s,8*s,2,belly);R(c,x-5*s,y-6*s,10*s,1.5,dark);
+  R(c,r?x-12*s:x+5*s,y-5*s+w,8*s,2.4*s,col);R(c,r?x-12*s:x+11*s,y-4*s+w,2*s,1.5*s,dark);
+  const hx=r?x+3*s:x-9*s;R(c,hx,y-11*s,6*s,5*s,col);R(c,hx+(r?5*s:-2*s),y-9*s,3*s,2.4*s,col);
+  R(c,hx+(r?3.5*s:1.5*s),y-10*s,1.4,1.4,'#fff6a0');R(c,hx+(r?5*s:-1*s),y-7*s,3*s,1,'#f4ecd0');
+  R(c,x-3*s,y,2.2,3*s+w,dark);R(c,x+2*s,y,2.2,3*s-w+1,dark);
+  if(e.swing>0)R(c,x+d*9*s,y-4,4,2,'#fff')}}
+Object.assign(SPR,{
+ compy:dinoSpr('#7ab04a','#3a5a22',.7,'#d8d49a'),raptor:dinoSpr('#d0782c','#7a3a14',1,'#f0d49a'),deino:dinoSpr('#4a8a9a','#244a5a',1.25,'#cfe0d8'),allo:dinoSpr('#8a6a3c','#3a2a18',2,'#d8c8a0'),
+ frog(c,e){const x=e.x,y=e.y,w=Math.sin(G.t*6+e.wob)>0?1:0;R(c,x-8,y+2,16,3,'rgba(0,0,0,.28)');
+  R(c,x-7,y-5,14,8,'#4a9a3a');R(c,x-6,y-5,12,2,'#6acc52');R(c,x-5,y+0,10,3,'#c8d878');R(c,x-6,y-8,4,4,'#4a9a3a');R(c,x+2,y-8,4,4,'#4a9a3a');R(c,x-5,y-7,2,2,'#f0f0a0');R(c,x+3,y-7,2,2,'#f0f0a0');R(c,x-4,y-6,1,1,'#111');R(c,x+4,y-6,1,1,'#111');
+  R(c,x-9,y+1+w,3,3,'#3a7a2c');R(c,x+6,y+1+w,3,3,'#3a7a2c');if(e.swing>0)R(c,x+(e.face==='r'?9:-13),y-3,6,2,'#e07a8a')}});
+/* la jungle devient celle de Chult */
+const CH=(i,l)=>{SCREENS[i].enemies=l};
+CH(J1,[{k:'jaguar',x:70,y:100},{k:'compy',x:186,y:112},{k:'compy',x:214,y:86},{k:'compy',x:196,y:128}]);
+CH(J2,[{k:'raptor',x:176,y:96},{k:'compy',x:120,y:118}]);
+CH(J3,[{k:'raptor',x:130,y:98},{k:'raptor',x:210,y:118},{k:'frog',x:60,y:110}]);
+CH(J4,[{k:'zombie',x:84,y:112},{k:'deino',x:156,y:96},{k:'stirge',x:196,y:128}]);
+CH(N1,[{k:'croco',x:60,y:106},{k:'frog',x:190,y:90}]);
+CH(N2,[{k:'frog',x:150,y:92},{k:'frog',x:196,y:112},{k:'stirge',x:190,y:74}]);
+CH(N3,[{k:'zombie',x:90,y:100},{k:'raptor',x:150,y:122},{k:'raptor',x:200,y:84}]);
+CH(S1,[{k:'croco',x:176,y:128},{k:'frog',x:110,y:84}]);
+Object.assign(PROPS,{
+ colonne:{w:12,h:34,sw:10,sh:6,draw(c,x,y){R(c,x+1,y+4,10,30,'#8a8a80');R(c,x+1,y+4,3,30,'#a8a89c');R(c,x+8,y+4,3,30,'#6a6a62');R(c,x,y,12,5,'#9a9a90');R(c,x,y+31,12,3,'#7a7a70');R(c,x+3,y+12,2,3,'#2c6a30');R(c,x+6,y+20,3,2,'#2c6a30');R(c,x+2,y+22,1,6,'#2c6a30')}},
+ mur:{w:26,h:18,sw:26,sh:8,draw(c,x,y){R(c,x,y+4,26,14,'#6a6a62');R(c,x,y+4,26,2,'#8a8a80');R(c,x+2,y,10,5,'#6a6a62');R(c,x+14,y+2,8,3,'#5a5a54');for(let k=0;k<3;k++)R(c,x+k*9,y+9+(k%2)*3,8,1,'#3a3a36');R(c,x+16,y+6,3,10,'#2c6a30');R(c,x+3,y+12,4,5,'#2c6a30')}},
+ autel:{w:20,h:16,sw:18,sh:8,draw(c,x,y,t,p){const lit=p&&p.fl&&P.fl[p.fl];R(c,x,y+6,20,10,'#5a5a54');R(c,x+1,y+4,18,3,'#8a8a80');R(c,x+3,y+8,14,1,'#e3b441');R(c,x+9,y+10,2,4,'#e3b441');R(c,x+7,y+11,6,1,'#e3b441');if(!lit){R(c,x+6,y,8,5,'#1c1c24');R(c,x+7,y+1,6,1,'#e3b441');R(c,x+9,y+1,1,3,'#e3b441')}}}});
+function omuArt(extra){return c=>{
+  for(let y=58;y<150;y+=10)for(let x=0;x<W;x+=12){const h=hash(x+y*3,y),o=((y/10)%2)*6;if(h<.28)continue;R(c,x+o,y,11,9,h<.6?'#6a6a62':'#5a5a54');R(c,x+o,y,11,1,'#8a8a80');R(c,x+o,y+8,11,1,'#3a3a36');if(h>.9)R(c,x+2+o,y+3,3,3,'#2c6a30')}
+  if(extra)extra(c)}}
+const omuTint='rgba(20,34,30,.28)';
+/* --- boucle sud : Gué des orcs ↔ Clairière du Roi ↔ Terrasses ↔ Avant-poste --- */
+jsc({name:'Clairière du Roi',nb:{l:-1,r:R2},gx:3,gy:3,up:{x:104,w:48,to:O3},
+ props:[{t:'tree',x:20,y:60},{t:'tree',x:220,y:62},{t:'bones',x:60,y:110},{t:'bones',x:90,y:130},{t:'bones',x:180,y:100},{t:'chest',x:200,y:130,fl:'r1'},{t:'rock',x:30,y:136}],
+ hot:[{x:190,y:130,w:34,h:20,...hazard('r1',{label:'Nid de dinosaure',stat:'dex',dc:13,verb:'Dérober le butin sans un bruit',alt:{stat:'sag',dc:12,verb:'Guetter le retour de la bête'},intro:'Des os, des plumes, des œufs brisés. Un coffre d\'explorateur, éventré, gît dans un nid gigantesque.',
+   okTxt:'Vous récupérez le contenu du coffre sans réveiller personne : des pièces, une potion de soins supérieurs.',koTxt:'Une branche craque ! Un rugissement fait trembler le sol.',rew:{po:70,items:['potion2'],xp:100},ko:hurtSpawn([2],'Sursaut','raptor',-30),doneTxt:'Le nid est vide.'})}],
+ enemies:[{k:'allo',x:90,y:110},{k:'compy',x:150,y:126},{k:'compy',x:170,y:92}]});
+jsc({name:'Terrasses moussues',nb:{l:R1,r:-1},gx:4,gy:3,up:{x:104,w:48,to:O4},
+ props:[{t:'tree',x:18,y:60},{t:'tree',x:214,y:60},{t:'mur',x:60,y:96},{t:'colonne',x:180,y:84},{t:'rock',x:30,y:134},{t:'chest',x:206,y:128,fl:'r2'},{t:'bush',x:120,y:140}],
+ hot:[{x:196,y:128,w:34,h:20,...hazard('r2',{label:'Coffre des terrasses',stat:'str',dc:12,verb:'Écarter les pierres effondrées',intro:'Un éboulis recouvre à moitié un coffre de bois sombre.',
+   okTxt:'Vous dégagez les pierres : une bourse bien remplie et un anneau.',koTxt:'Un bloc vous écrase le pied.',rew:{po:60,items:['anneau_prot','bourse'],xp:100},ko:()=>hurtP(rnd(6),'Pierre qui roule'),doneTxt:'Le coffre est vide.'})}],
+ enemies:[{k:'deino',x:90,y:106},{k:'deino',x:160,y:118},{k:'frog',x:60,y:130}]});
+/* ====== OMU : l'entrée de la cité interdite ====== */
+ITEMS.cube={n:'Cube du Trompeur',d:'Objet de quête. Un cube de pierre noire gravé de glyphes : l\'un des neuf cubes qui ouvrent la Tombe des Neuf Dieux.',w:0,val:0,quest:true,ic:['gem','#2a2a34','#e3b441']};
+const pTabaxi={skin:'#c89a50',body:'#4a6a3a',legs:'#2a3a22',hair:'#3a2a10',arm:'#c89a50',hat:'#5a4a22'};
+jsc({name:'Grand escalier d\'Omu',nb:{l:OM2,r:-1},gx:-1,gy:1,tint:omuTint,omu:true,
+ props:[{t:'colonne',x:40,y:60},{t:'colonne',x:200,y:62},{t:'mur',x:90,y:60},{t:'bush',x:20,y:136},{t:'bones',x:110,y:120}],
+ hot:[{x:232,y:100,w:22,h:40,label:'Escalier vers la jungle',fn(){goRoom(J4,30,112)}},{x:92,y:70,w:30,h:14,label:'Inscription',text:'Des glyphes d\'Omu, rongés par la mousse : « Ici repose la cité d\'Omu, ceux qui entrent sans l\'accord des neuf ne reviennent pas. » Une autre ligne, plus récente, grattée à la dague : « La mort est partout. »'}],
+ art:omuArt(c=>{for(let k=0;k<5;k++){R(c,222+k*6,70+k*14,34-k*6,10,'#7a7a70');R(c,222+k*6,70+k*14,34-k*6,2,'#9a9a90')}}),
+ enemies:[{k:'kobold',x:110,y:100},{k:'kobold',x:150,y:126}]});
+SCREENS[OM1].exits.push({x:238,y:96,w:18,h:50,to:J4,tx:30,ty:112});
+jsc({name:'Avenue des Colosses',nb:{r:OM1,l:OM4},gx:-2,gy:1,up:{x:104,w:48,to:OM3},tint:omuTint,omu:true,
+ props:[{t:'colonne',x:30,y:60},{t:'colonne',x:210,y:62},{t:'mur',x:60,y:130},{t:'bones',x:176,y:118},{t:'bush',x:230,y:140},{t:'crate',x:20,y:130}],
+ art:omuArt(),npcs:[{id:'cloche',name:'Cloche de Cuivre',x:70,y:100,face:'r',pal:pTabaxi}],
+ enemies:[{k:'kobold',x:170,y:100},{k:'raptor',x:200,y:130}]});
+jsc({name:'Quartier effondré',nb:{r:-1,l:OM5},gx:-2,gy:0,down:{x:104,w:48,to:OM2},tint:omuTint,omu:true,
+ props:[{t:'mur',x:30,y:100},{t:'mur',x:190,y:100},{t:'colonne',x:20,y:62},{t:'bones',x:80,y:130},{t:'autel',x:106,y:70,fl:'om3'},{t:'bush',x:228,y:62}],
+ hot:[{x:96,y:68,w:40,h:20,...hazard('om3',{label:'Sanctuaire du Trompeur',stat:'dex',dc:14,verb:'Retirer le cube sans déclencher le piège',alt:{stat:'sag',dc:13,verb:'Déchiffrer les glyphes de garde'},intro:'Un petit sanctuaire dédié à l\'un des dieux Trompeurs. Au centre, un cube de pierre noire repose dans une alcôve, entouré de glyphes dont certains brillent faiblement.',
+   okTxt:'Le cube se détache dans un déclic. Rien ne se produit. Vous tenez dans la main un cube du Trompeur.',koTxt:'Les glyphes s\'embrasent ! Une décharge vous traverse et des kobolds, attirés par le bruit, surgissent.',rew:{items:['cube'],xp:150},ko:hurtSpawn([6],'Piège du Trompeur','kobold',-40),doneTxt:'L\'alcôve est vide : vous avez déjà pris le cube.'})}],
+ art:omuArt(),enemies:[{k:'deino',x:90,y:116},{k:'frog',x:170,y:130},{k:'kobold',x:210,y:90}]});
+jsc({name:'Égouts d\'Omu',nb:{r:OM2,l:OM7},gx:-3,gy:1,up:{x:104,w:48,to:OM5},tint:'rgba(10,30,24,.38)',omu:true,swamp:[[130,90,100,46]],
+ props:[{t:'mur',x:30,y:64},{t:'reeds',x:140,y:92},{t:'reeds',x:200,y:128},{t:'chest',x:36,y:116,fl:'om4'},{t:'bones',x:80,y:130}],
+ hot:[{x:26,y:116,w:34,h:20,...hazard('om4',{label:'Coffre des égouts',stat:'str',dc:13,verb:'Forcer le couvercle rouillé',alt:{stat:'dex',dc:13,verb:'Crocheter la serrure'},intro:'Un coffre ruisselant, coincé contre le mur d\'un tunnel. Les sceaux de cire portent une marque rouge.',
+   okTxt:'Le couvercle cède : des pièces et un parchemin de soins.',koTxt:'La rouille vous entaille la main.',rew:{po:55,items:['parchemin'],xp:100},ko:()=>hurtP(rnd(4),'Rouille'),doneTxt:'Le coffre est vide.'})}],
+ art:omuArt(),enemies:[{k:'zombie',x:100,y:100},{k:'frog',x:170,y:110},{k:'zombie',x:60,y:140}]});
+jsc({name:'Place du marché d\'Omu',nb:{r:OM3,l:OM6},gx:-3,gy:0,down:{x:104,w:48,to:OM4},tint:omuTint,omu:true,
+ props:[{t:'colonne',x:34,y:62},{t:'colonne',x:206,y:62},{t:'crate',x:60,y:100},{t:'barrel',x:72,y:104},{t:'mur',x:170,y:128},{t:'bush',x:20,y:140}],
+ art:omuArt(),npcs:[{id:'lanterne',name:'Lanterne Voilée',x:156,y:96,face:'l',pal:{...pTabaxi,skin:'#b8884a',body:'#6a4a2a'}}],
+ enemies:[{k:'kobold',x:60,y:130},{k:'yuanti',x:200,y:110}]});
+jsc({name:'Amphithéâtre d\'Omu',nb:{r:OM5,l:-1},gx:-4,gy:0,down:{x:104,w:48,to:OM7},tint:omuTint,omu:true,
+ props:[{t:'colonne',x:20,y:62},{t:'mur',x:40,y:100},{t:'crate',x:200,y:76},{t:'crate',x:214,y:82},{t:'chest',x:210,y:120,fl:'om6'},{t:'barrel',x:186,y:80}],
+ hot:[{x:200,y:120,w:34,h:20,...hazard('om6',{label:'Coffre des mages rouges',stat:'int',dc:11,verb:'Déchiffrer le sceau arcanique',alt:{stat:'dex',dc:13,verb:'Crocheter la serrure'},intro:'Un coffre scellé d\'un cercle de runes rouges. Il a visiblement été pillé puis refermé.',
+   okTxt:'Le sceau s\'efface. À l\'intérieur : des pièces et un parchemin.',koTxt:'Les runes crépitent et vous brûlent.',rew:{po:60,items:['parchemin'],xp:100},ko:()=>hurtP(rnd(6),'Runes de Thay'),doneTxt:'Le coffre est vide.'})}],
+ art:omuArt(),npcs:[{id:'mage',name:'Mage rouge de Thay',x:110,y:110,face:'r',pal:{skin:'#d0a888',body:'#a82a2a',legs:'#5a1a1a',hair:'#111',hood:'#8a1a1a',arm:'#a82a2a'}}],
+ enemies:[{k:'thay',x:150,y:96},{k:'kobold',x:60,y:130}]});
+jsc({name:'Parvis du Serpent de la Nuit',nb:{r:OM4,l:-1},gx:-4,gy:1,up:{x:104,w:48,to:OM6},tint:'rgba(10,36,20,.34)',omu:true,
+ props:[{t:'colonne',x:30,y:62},{t:'colonne',x:206,y:62},{t:'totem',x:20,y:100},{t:'bones',x:90,y:130},{t:'mur',x:170,y:128}],
+ hot:[{x:60,y:60,w:30,h:14,label:'Fane du Serpent de la Nuit',text:'Un grand portail de pierre sculpté en gueule de serpent ferme le fond du parvis. Des yuan-ti montent la garde. Plus loin résonne un sifflement, celui de Ras Nsi, dit-on. (La suite arrive bientôt.)'}],
+ art:omuArt(c=>{R(c,60,56,34,16,'#2a2a30');R(c,64,60,26,12,'#0a0a0e');R(c,66,58,4,4,'#c8f060');R(c,84,58,4,4,'#c8f060')}),
+ enemies:[{k:'yuanti',x:100,y:100},{k:'yuanti',x:170,y:92},{k:'kobold',x:150,y:130}]});
+{const stairsBack=SCREENS[OM1];}
+SCREENS[N1].nb.r=O1;SCREENS[S1].nb.r=O3;SCREENS[S2].nb.l=O5;
+/* porte d'Omu : l'escalier s'ouvre */
+TKdoor.nodes.open={t:'La porte est ouverte. Un grand escalier s\'enfonce dans la pénombre : c\'est l\'entrée d\'Omu, la cité interdite de Chult.',c:[['Descendre l\'escalier','!do:enterOmu:end'],['Reculer','!end']]};
+FXT.enterOmu=()=>{goRoom(OM1,214,118);return ''};
+/* quête : les neuf cubes */
+TK.cloche={start:'a',sf:()=>P.q.omu===2?'done':P.q.omu===1?(P.bag.cube?'ready':'wait'):'a',nodes:{
+ a:{t:'« Chut, grand lézard doré. Tu viens d\'entrer dans Omu. Ici, on ne parle pas fort : les kobolds entendent, les yuan-ti aussi. Moi, c\'est Cloche de Cuivre. »',c:[['Que cherches-tu ici ?','what'],['Tu es tabaxi ?','tabaxi'],['Partir','!end']]},
+ tabaxi:{t:'« Chasseuse de Chult, comme mes amis Sac de Clous et Lanterne Voilée. Nous cherchons ce que tout le monde cherche : de quoi arrêter la malédiction de la mort. »',c:[['Que cherches-tu ici ?','what'],['Partir','!end']]},
+ what:{t:'« Neuf cubes de pierre, un par dieu Trompeur, cachés dans des sanctuaires de la ville. Réunis, ils ouvrent la Tombe des Neuf Dieux. Les Mages rouges de Thay et les yuan-ti du Serpent les veulent aussi. »',c:[['Je t\'aide à en trouver un.','!quest:accept:omu:ok'],['Pas pour l\'instant.','!end']]},
+ ok:{t:'« Il y a un sanctuaire dans le Quartier effondré, au nord de l\'avenue. Les glyphes sont piégés : méfie-toi. Rapporte-moi le cube. »',c:[['J\'y vais','!end']]},
+ wait:{t:'« Le sanctuaire du Trompeur est au nord, dans le Quartier effondré. Prends le cube, avec précaution. »',c:[['Compris','!end']]},
+ ready:{t:'« Un cube ! Bien joué. Tu es plus malin que tu en as l\'air, grand lézard. »',c:[['Remettre le cube','!quest:turnin:omu:paid']]},
+ paid:{t:'« Voici de quoi t\'équiper. Garde l\'œil sur les Mages rouges : ils ne négocient qu\'avec une lame sous la gorge. Trois cubes de plus sont dans la ville, d\'après Lanterne. »',c:[['Merci','!end']]},
+ done:{t:'« Les huit autres cubes sont encore là-dehors. Mais ça, c\'est pour une autre fois. »',c:[['Partir','!end']]}}};
+TK.lanterne={start:'a',nodes:{
+ a:{t:'« Lanterne Voilée, pour te servir. Omu est un labyrinthe de rues, d\'égouts et de ruines. Fais attention : un énorme tyrannosaure rôde, on l\'appelle le Roi des Plumes. »',c:[['Les Mages rouges ?','red'],['Les yuan-ti ?','yuan'],['Partir','!end']]},
+ red:{t:'« Valindra Shadowmantle et ses Mages rouges de Thay sont à l\'amphithéâtre, à l\'ouest. Ils cherchent les cubes eux aussi. On peut leur parler… avec prudence. »',c:[['Et les yuan-ti ?','yuan'],['Partir','!end']]},
+ yuan:{t:'« Ils sont au parvis du Fane du Serpent de la Nuit. Ras Nsi, leur chef, est mourant : la malédiction le ronge. Il n\'aime pas les visiteurs. »',c:[['Les Mages rouges ?','red'],['Partir','!end']]}}};
+TK.mage={start:'a',nodes:{
+ a:{t:'« Un drakéide… Un paladin, n\'est-ce pas ? Je suis Mage rouge de Thay. Nous cherchons un moyen d\'en finir avec la mort. Passez votre chemin et il ne vous arrivera rien. »',c:[['Que voulez-vous ?','want'],['Dégainer','!attack'],['Partir','!end']]},
+ want:{t:'« Les neuf cubes. Une alliance de circonstance, peut-être ? Revenez quand vous en aurez un. »',c:[['Je ne vous les donnerai pas.','a2'],['Partir','!end']]},
+ a2:{t:'« Dommage. Tâchez de ne pas vous mettre en travers de Valindra. »',c:[['Nous verrons.','!end'],['Dégainer','!attack']]}}};
+Object.assign(QUESTS,{omu:{n:'Le premier cube',goal:()=>P.bag.cube?'Rapporter le cube du Trompeur à Cloche de Cuivre (Avenue des Colosses)':'Trouver le cube du Trompeur au sanctuaire du Quartier effondré (Omu)',ready:()=>!!P.bag.cube,rew:'150 po, 300 PX'}});
+{const _qa=questAction;questAction=function(op,id){const ok=_qa(op,id);if(ok&&op==='turnin'&&id==='omu'&&P.q.omu===2){delete P.bag.cube;P.po+=150;P.xp+=300;log('Quête terminée : Le premier cube. +150 po, +300 PX. Cloche de Cuivre garde le cube : il est en sûreté.','good');float(P,'Quête terminée','#e3b441');renderBag()}return ok}}
+{const _nm=npcMark;npcMark=function(n){if(n.id==='cloche')return P.q.omu===0?'!':(P.q.omu===1&&P.bag.cube?'?':'');return _nm(n)}}
 /* ---- état ---- */
 const P={name:'Guesh',x:64,y:100,w:10,h:8,hp:12,max:12,ac:16,atk:5,dmg:[1,8,3],dex:0,xp:0,sp:54,reach:18,
- face:'r',hands:5,hmax:5,level:1,style:null,prep:[],prepOk:false,conc:null,cT:0,rr:0,breath:1,sense:3,q:{rats:0,colis:0,main:0},kills:{rat:0,griffe:0,zombie:0,croco:0},gate:false,slots:2,smite:false,eq:{head:null,body:'mailles',main:'epee0',off:null,ring1:null,ring2:null,amu:null,boots:null},fl:{},vis:[],buff:null,concb:0,chkb:0,swampb:0,offw:null,offA:5,offD:null,bagmax:12,sr:0,dest:null,target:null,pend:null,swing:0,moving:false,act:0,acted:true,isP:true};
+ face:'r',hands:5,hmax:5,level:1,style:null,prep:[],prepOk:false,conc:null,cT:0,rr:0,breath:1,sense:3,q:{rats:0,colis:0,main:0,omu:0},kills:{rat:0,griffe:0,zombie:0,croco:0},gate:false,slots:2,smite:false,eq:{head:null,body:'mailles',main:'epee0',off:null,ring1:null,ring2:null,amu:null,boots:null},fl:{},vis:[],buff:null,concb:0,chkb:0,swampb:0,offw:null,offA:5,offD:null,bagmax:12,sr:0,smax:2,cd:1,swT:0,thunder:false,stats:{str:17,dex:10,con:14,int:8,sag:12,cha:14},rp:{sc:1,x:64,y:100},rcd:0,dest:null,target:null,pend:null,swing:0,moving:false,act:0,acted:true,isP:true};
 const G={close:null,menu:false,talk:null,fade:null,sc:1,t:0,paused:true,started:false,dead:false,roundT:0,round:0,inCombat:false,trans:null,floats:[],fx:[],sensePulse:0,dlgT:0};
 const keys={};
 function curEnemies(i=G.sc){return SCREENS[i].enemies}
@@ -1254,8 +1404,8 @@ function attack(a,b,off,forced){
   if(!off)a.swing=.22;faceTo(a,b.x-a.x,b.y-a.y);sfx('swing');
   if(!hit){sfx('miss');log(`${an} frappe ${bn}${tag} : d20 (${d}) + ${A}${bd?` + bénédiction ${bd}`:''} = ${tot} contre CA ${b.ac}. ${d===1?'Échec critique !':'Raté.'}`,cls);float(b,'Raté','#a9b8bc');return}
   const dm=roll(D[0],D[1],D[2],crit,off?0:a.rr);
-  const ex=(!off&&a.isP&&P.smite&&P.slots>0)?roll(2+(b.undead?1:0),8,0,crit):null;if(ex){P.slots--;P.smite=false}const fv=(a.isP&&P.conc==='favor')?roll(1,4,0,crit):null;const T=dm.t+(ex?ex.t:0)+(fv?fv.t:0);b.hp=Math.max(0,b.hp-T);b.hurt=.25;
-  log(`${an} frappe ${bn}${tag} : d20 (${d}) + ${A}${bd?` + bénédiction ${bd}`:''} = ${tot} contre CA ${b.ac}. ${crit?'COUP CRITIQUE ! ':'Touché. '}Dégâts : ${D[0]*(crit?2:1)}d${D[1]} (${dm.r.join('+')}) +${D[2]} = ${dm.t}.${ex?` CHÂTIMENT DIVIN : ${ex.r.length}d8${b.undead?' (mort-vivant)':''} (${ex.r.join('+')}) = ${ex.t} radiants. Total ${T}.`:''}${fv?` Faveur divine : 1d4 (${fv.r.join('+')}) = ${fv.t} radiants.`:''}`,(crit||ex)?'crit':cls);
+  const ex=(!off&&a.isP&&P.smite&&P.slots>0)?roll(2+(b.undead?1:0),8,0,crit):null;if(ex){P.slots--;P.smite=false}const fv=(a.isP&&P.conc==='favor')?roll(1,4,0,crit):null;const th=(!off&&a.isP&&P.thunder&&P.slots>0)?roll(2,6,0,crit):null;if(th){P.slots--;P.thunder=false}const T=dm.t+(ex?ex.t:0)+(fv?fv.t:0)+(th?th.t:0);b.hp=Math.max(0,b.hp-T);b.hurt=.25;
+  log(`${an} frappe ${bn}${tag} : d20 (${d}) + ${A}${bd?` + bénédiction ${bd}`:''} = ${tot} contre CA ${b.ac}. ${crit?'COUP CRITIQUE ! ':'Touché. '}Dégâts : ${D[0]*(crit?2:1)}d${D[1]} (${dm.r.join('+')}) +${D[2]} = ${dm.t}.${ex?` CHÂTIMENT DIVIN : ${ex.r.length}d8${b.undead?' (mort-vivant)':''} (${ex.r.join('+')}) = ${ex.t} radiants. Total ${T}.`:''}${fv?` Faveur divine : 1d4 (${fv.r.join('+')}) = ${fv.t} radiants.`:''}${th?` FRAPPE TONITRUANTE : 2d6 (${th.r.join('+')}) = ${th.t} tonnerre.`:''}`,(crit||ex)?'crit':cls);
   sfx((crit||ex)?'crit':b.isP?'hurt':'hit');
   float(b,'-'+T,(crit||ex)?'#e3b441':(b.isP?'#e0564a':'#fff'));
   if(b.hp<=0)die(b);
@@ -1269,6 +1419,7 @@ function die(b){
 }
 function aggroList(){return curEnemies().filter(e=>e.aggro&&!e.dead)}
 function startRound(){
+  if(P.conc==='hero'&&P.hp<P.max&&G.inCombat){const h=Math.min(2,P.max-P.hp);P.hp+=h;float(P,'+'+h,'#6fb36a')}
   if(typeof tbStop==='function')tbStop(true);G.round++;G.roundT=0;const L=[P,...aggroList()];const out=[];
   for(const c of L){const r=rnd(20)+c.dex;c.act=Math.max(0,(20-r)/21)*ROUND*.6;c.acted=false;c.init=r;out.push(`${c.isP?'Guesh':c.name} ${r}`)}
   if(G.round===1)log('Initiative : '+out.join(', ')+'.','sys');
@@ -1308,6 +1459,14 @@ function sense(){
   if(und.length){und.forEach(e=>e.sensed=6);log(`Sens divin (${P.sense}/3) : ${und.length} présence(s) morte-vivante(s) détectée(s) dans les environs !`,'crit')}
   else log(`Sens divin (${P.sense}/3) : aucun céleste, fiélon ni mort-vivant à moins de 60 pieds.`,'sys');
 }
+function anchor(){
+  if(G.dead||!G.started)return;
+  if(G.inCombat){log('Serment de retour : impossible en plein combat.','sys');return}
+  if(P.rcd>0){const m=Math.ceil(P.rcd/60);log(`Serment de retour : encore ${m} min avant de pouvoir le renouveler.`,'sys');return}
+  P.rp={sc:G.sc,x:Math.round(P.x),y:Math.round(P.y)};P.rcd=900;useAction();
+  log(`Serment de retour : Guesh consacre ce lieu (${SCREENS[G.sc].name}). S'il tombe, il se relèvera ici. Nouvelle utilisation dans 15 minutes.`,'good');
+  G.fx.push({k:'heal',x:P.x,y:P.y,t:.8});sfx('chime');float(P,'Lieu consacré','#e3b441');
+}
 /* ---- interactions ---- */
 function nearTargets(){
   const sc=SCREENS[G.sc],out=[];
@@ -1333,7 +1492,8 @@ function update(dt){
   if(G.talk)return;
   if(G.trans){G.trans.t+=dt/.45;if(G.trans.t>=1){G.sc=G.trans.to;G.trans=null;unstick();$('where').textContent=SCREENS[G.sc].name+' · '+SCREENS[G.sc].n}return}
   if(G.paused||G.dead||!G.started)return;
-  G.t+=dt;const sc=SCREENS[G.sc];
+  G.t+=dt;if(P.rcd>0)P.rcd-=dt;const sc=SCREENS[G.sc];
+  if(P.swT>0){P.swT-=dt;if(P.swT<=0){P.swT=0;recalc();log('Arme sacrée : la lumière s\'éteint.','sys')}}
   if(P.buff){P.buff.t-=dt;if(P.buff.t<=0){P.buff=null;recalc();log('Élixir de vigueur : l\'effet se dissipe.','sys')}}
   if(!P.vis.includes(G.sc))P.vis.push(G.sc);
   if(P.conc){P.cT-=dt;if(P.cT<=0)endConc(SPELLS[P.conc].n+' prend fin (durée écoulée).')}
@@ -1358,6 +1518,7 @@ function update(dt){
   for(const e of sc.enemies){
     if(e.dead){e.deadT-=dt;continue}
     if(e.sensed>0)e.sensed-=dt;if(e.hurt>0)e.hurt-=dt;if(e.swing>0)e.swing-=dt;
+    if(e.flee>0){e.flee-=dt;const fx=e.x-P.x,fy=e.y-P.y,l=Math.hypot(fx,fy)||1;move(e,fx/l*e.sp*dt,fy/l*e.sp*dt,sc);continue}
     if(!e.aggro){if(dist(P,e)<58)engage(e);continue}
     const d=dist(P,e);faceTo(e,P.x-e.x,P.y-e.y);
     if(d>e.reach-3){const ddx=P.x-e.x,ddy=P.y-e.y,l=Math.hypot(ddx,ddy);move(e,ddx/l*e.sp*(inSwamp(sc,e)&&e.k!=='croco'?.7:1)*dt,ddy/l*e.sp*(inSwamp(sc,e)&&e.k!=='croco'?.7:1)*dt,sc)}
@@ -1371,7 +1532,7 @@ function update(dt){
     for(const c of L){
       if(c.acted||G.roundT<c.act)continue;
       if(c.isP){if(P.target&&!P.target.dead&&dist(P,P.target)<=P.reach){if(OPT.auto){attack(P,P.target);if(P.offw&&P.target&&!P.target.dead&&!G.dead)attack(P,P.target,true);c.acted=true}else if(!TB.on)tbStart()}else if(TB.on)tbStop()}
-      else if(dist(P,c)<=c.reach){attack(c,P);c.acted=true}
+      else if(c.flee>0){c.acted=true}else if(dist(P,c)<=c.reach){attack(c,P);c.acted=true}
       if(G.dead)return;
     }
     if(TB.on)TB.t+=dt;
@@ -1380,7 +1541,7 @@ function update(dt){
   for(const f of G.floats){f.y-=14*dt;f.a-=dt*.9}G.floats=G.floats.filter(f=>f.a>0);
   for(const f of G.fx)f.t-=dt;G.fx=G.fx.filter(f=>f.t>0);
   if(G.sensePulse>0)G.sensePulse-=dt;
-  if(P.level<2&&P.xp>=300&&!G.inCombat&&!G.dead&&!G.fade)openLevelUp();
+  if(P.level<4&&P.xp>=LVXP[P.level+1]&&!G.inCombat&&!G.dead&&!G.fade)openLevelUp();
   /* HUD ciblage */
   const t=nearTargets()[0],pr=$('prompt');pr.hidden=!t;if(t)pr.textContent='E · '+t.label;
 }
@@ -1439,11 +1600,11 @@ function buy(npc,price,kind){
   if(kind==='cadeau'&&npc.gave)return false;
   if(!spend(price))return false;
   if(kind==='hydromel'){const h=Math.min(2,P.max-P.hp);P.hp+=h;log(`Hydromel : -${price} po, +${h} PV.`,'good')}
-  else if(kind==='chambre'){P.hp=P.max;P.hands=P.hmax;P.prepOk=P.level>=2;P.breath=1;P.sense=3;P.slots=2;P.sr=0;log(`Chambre : -${price} po. Repos long : tout est restauré.`,'good')}
+  else if(kind==='chambre'){P.hp=P.max;P.hands=P.hmax;P.prepOk=P.level>=2;P.breath=1;P.sense=3;P.slots=P.smax;P.sr=0;P.cd=1;log(`Chambre : -${price} po. Repos long : tout est restauré.`,'good')}
   else if(kind==='cadeau'){npc.gave=true;addItem('cle');log(`Vous offrez un verre à ${npc.name} (-${price} po).`,'sys')}
   else if(kind==='pomme'){if(!addItem('pomme')){P.po+=price;renderBag();return false}log(`Pomme achetée (-${price} po).`,'sys')}
   else if(kind==='soin'){P.hp=P.max;log(`Soins du temple : -${price} po, PV au maximum.`,'good')}
-  else if(kind==='priere'){P.slots=2;P.sense=3;log(`Prière : -${price} po. Emplacements de sort et Sens divin restaurés.`,'good')}
+  else if(kind==='priere'){P.slots=P.smax;P.sense=3;log(`Prière : -${price} po. Emplacements de sort et Sens divin restaurés.`,'good')}
   return true;
 }
 function dice(){
@@ -1556,7 +1717,7 @@ function useItem(id){
     if(P.sense>=3){log('Chandelle bénie : Sens divin est déjà au maximum.','sys');return}
     P.sense++;log('Chandelle bénie : +1 utilisation de Sens divin.','good');used=true;
   }else if(it.use==='incense'){
-    if(P.slots>=2){log('Encens sacré : vos emplacements de sort sont déjà pleins.','sys');return}
+    if(P.slots>=P.smax){log('Encens sacré : vos emplacements de sort sont déjà pleins.','sys');return}
     P.slots++;log('Encens sacré : +1 emplacement de sort.','good');used=true;
   }else if(it.use==='candle2'){
     if(P.sense>=3){log(it.n+' : Sens divin est déjà au maximum.','sys');return}
@@ -1624,7 +1785,9 @@ const SPELLS={
  cure:{n:'Soins',d:'1d8+2 PV. Prend votre action.'},
  faith:{n:'Bouclier de la foi',d:'+2 CA pendant 1 minute. Concentration.'},
  bless:{n:'Bénédiction',d:'+1d4 à vos jets d\'attaque pendant 1 minute. Concentration.'},
- favor:{n:'Faveur divine',d:'+1d4 dégâts radiants sur vos coups pendant 1 minute. Concentration.'}};
+ favor:{n:'Faveur divine',d:'+1d4 dégâts radiants sur vos coups pendant 1 minute. Concentration.'},
+ hero:{n:'Héroïsme',d:'Vous regagnez 2 PV à chaque round pendant 1 minute. Concentration.'},
+ thunder:{n:'Frappe tonitruante',d:'Votre prochain coup inflige 2d6 de dégâts de tonnerre en plus.'}};
 const STYLES={
  def:{n:'Défense',d:'+1 CA tant que vous portez une armure.'},
  duel:{n:'Duel',d:'+2 aux dégâts avec une arme à une main (bouclier autorisé).'},
@@ -1639,55 +1802,99 @@ function castConc(id,extra){
   if(P.slots<=0){log(SPELLS[id].n+' : plus d\'emplacement de sort.','sys');return}
   P.slots--;startConc(id);log(`${SPELLS[id].n} (niv. 1, concentration) : ${extra}`,'good');
 }
+function heroism(){castConc('hero','vous regagnez 2 PV à chaque round pendant 1 minute.')}
 function faithShield(){castConc('faith','+2 CA pendant 1 minute (CA '+P.ac+').')}
 function bless(){castConc('bless','+1d4 à vos jets d\'attaque pendant 1 minute.')}
 function favor(){castConc('favor','+1d4 radiants sur chaque coup pendant 1 minute.')}
-/* ---- montée de niveau ---- */
-function openLevelUp(){G.lvl={step:0,gain:null,roll:null,style:null,prep:[]};for(const k in keys)keys[k]=false;lvView()}
-function openPrep(){if(P.level<2||!P.prepOk||G.inCombat||G.lvl||G.menu||G.shop||G.talk||G.neg||G.dead)return;G.lvl={step:2,prepOnly:true,prep:[...P.prep]};lvView()}
+/* ---- montée de niveau (2 à 4) ---- */
+const LVXP=[0,0,300,900,2700],SMAX=[0,2,2,3,3],cmod=v=>Math.floor((v-10)/2);
+const STEPS={2:['hp','style','prep','sum'],3:['hp','oath','sum'],4:['hp','asi','prep','sum']};
+const FEAT={
+ 2:['Un style de combat à choisir','Lancer des sorts : 3 sorts préparés et 2 emplacements de niveau 1','Châtiment divin (dépenser un emplacement : +2d8 radiants)','Imposition des mains : réserve portée à 10 PV'],
+ 3:['Serment de dévotion : Divinité canalisée (1 par repos court)','Arme sacrée : +2 à l\'attaque pendant 1 minute','Renvoi des impies : les morts-vivants et fiélons proches s\'enfuient','Santé divine : immunité aux maladies','3 emplacements de sort de niveau 1','Imposition des mains : réserve de 15 PV'],
+ 4:['Augmentation de caractéristiques : +2 à une caractéristique','4 sorts préparés (nouveaux sorts : Héroïsme, Frappe tonitruante)','Imposition des mains : réserve de 20 PV']};
+function nPrep(t){return t>=4?4:3}
+function openLevelUp(){const T=P.level+1;G.lvl={T,i:0,gain:null,roll:null,style:null,asi:null,prep:T===4?[...P.prep]:[]};for(const k in keys)keys[k]=false;lvView()}
+function openPrep(){if(P.level<2||!P.prepOk||G.inCombat||G.lvl||G.menu||G.shop||G.talk||G.neg||G.dead)return;G.lvl={T:P.level,prepOnly:true,i:2,prep:[...P.prep]};lvView()}
 function lvView(){
   const m=$('lv'),L=G.lvl;m.hidden=false;m.innerHTML='';
-  if(L.step===0){
-    m.append(el('h2','Niveau 2 !'),el('p','Guesh passe niveau 2 de paladin. Il gagne :'));
-    const ul=document.createElement('ul');ul.className='feat';
-    ['Un style de combat à choisir','Lancer des sorts : 3 sorts préparés et 2 emplacements de niveau 1','Châtiment divin (dépenser un emplacement : +2d8 radiants)','Imposition des mains : réserve portée à 10 PV'].forEach(t=>ul.append(el('li',t)));
-    m.append(ul);
+  const st=L.prepOnly?'prep':STEPS[L.T][L.i],next=()=>{L.i++;lvView()},con=cmod(P.stats.con+(L.asi==='con'?2:0));
+  if(st==='hp'){
+    m.append(el('h2','Niveau '+L.T+' !'),el('p','Guesh passe niveau '+L.T+' de paladin. Il gagne :'));
+    const ul=document.createElement('ul');ul.className='feat';FEAT[L.T].forEach(t=>ul.append(el('li',t)));m.append(ul);
     if(L.gain==null){
-      m.append(el('p','Points de vie : lancez 1d10 ou prenez la moyenne (6), plus votre modificateur de Constitution (+2).'));
-      m.append(el('button','Lancer 1d10','go',()=>{L.roll=rnd(10);L.gain=L.roll+2;lvView()}),el('button','Prendre la moyenne (6)','',()=>{L.gain=8;lvView()}));
+      m.append(el('p','Points de vie : lancez 1d10 ou prenez la moyenne (6), plus votre modificateur de Constitution ('+(con>=0?'+':'')+con+').'));
+      m.append(el('button','Lancer 1d10','go',()=>{L.roll=rnd(10);L.gain=L.roll+con;lvView()}),el('button','Prendre la moyenne (6)','',()=>{L.gain=6+con;lvView()}));
     }else{
-      m.append(el('p',(L.roll?`1d10 : ${L.roll} +2 = `:'Moyenne 6 +2 = ')+`+${L.gain} PV maximum (${P.max} → ${P.max+L.gain}).`,'note2'));
-      m.append(el('button','Continuer','go',()=>{L.step=1;lvView()}));
+      m.append(el('p',(L.roll?`1d10 : ${L.roll} ${con>=0?'+':''}${con} = `:`Moyenne 6 ${con>=0?'+':''}${con} = `)+`+${L.gain} PV maximum (${P.max} → ${P.max+L.gain}).`,'note2'));
+      m.append(el('button','Continuer','go',next));
     }
-  }else if(L.step===1){
+  }else if(st==='style'){
     m.append(el('h2','Style de combat'),el('p','Choisissez un style pour Guesh.'));
-    for(const k in STYLES){const b=el('button','','card2',()=>{L.style=k;L.step=2;lvView()});b.append(el('b',STYLES[k].n),el('small',STYLES[k].d));m.append(b)}
-  }else if(L.step===2){
-    m.append(el('h2','Sorts préparés'),el('p',`Choisissez 3 sorts (CHA +2, niveau 2 : 3 sorts). ${L.prep.length}/3`));
-    for(const k in SPELLS){const on=L.prep.includes(k),b=el('button','','card2'+(on?' sel':''),()=>{if(on)L.prep=L.prep.filter(x=>x!==k);else if(L.prep.length<3)L.prep.push(k);lvView()});b.append(el('b',(on?'✓ ':'')+SPELLS[k].n),el('small',SPELLS[k].d));m.append(b)}
+    for(const k in STYLES){const b=el('button','','card2',()=>{L.style=k;next()});b.append(el('b',STYLES[k].n),el('small',STYLES[k].d));m.append(b)}
+  }else if(st==='oath'){
+    m.append(el('h2','Serment de dévotion'),el('p','Guesh prête serment devant Bahamut, le Dragon de platine : honnêteté, courage, compassion, honneur, devoir.'));
+    const ul=document.createElement('ul');ul.className='feat';['Divinité canalisée : Arme sacrée (+2 à l\'attaque, 1 minute)','Divinité canalisée : Renvoi des impies (morts-vivants et fiélons en fuite)','1 utilisation, rechargée par un repos court ou long'].forEach(t=>ul.append(el('li',t)));
+    m.append(ul,el('button','Prêter serment','go',next));
+  }else if(st==='asi'){
+    const S=P.stats;
+    m.append(el('h2','Augmentation de caractéristiques'),el('p','Augmentez une caractéristique de 2 points.'));
+    [['str','Force',`FOR ${S.str} → ${S.str+2} : +1 attaque et dégâts`],['cha','Charisme',`CHA ${S.cha} → ${S.cha+2} : sorts préparés, Arme sacrée +3`],['con','Constitution',`CON ${S.con} → ${S.con+2} : +1 PV par niveau`]].forEach(([k,n,d])=>{
+      const b=el('button','','card2'+(L.asi===k?' sel':''),()=>{L.asi=k;lvView()});b.append(el('b',(L.asi===k?'✓ ':'')+n),el('small',d));m.append(b)});
+    const ok=el('button','Suivant','go',next);ok.disabled=!L.asi;m.append(ok);
+  }else if(st==='prep'){
+    const n=nPrep(L.prepOnly?P.level:L.T);
+    m.append(el('h2','Sorts préparés'),el('p',`Choisissez ${n} sorts. ${L.prep.length}/${n}`));
+    for(const k in SPELLS){if((k==='hero'||k==='thunder')&&(L.prepOnly?P.level:L.T)<4)continue;const on=L.prep.includes(k),b=el('button','','card2'+(on?' sel':''),()=>{if(on)L.prep=L.prep.filter(x=>x!==k);else if(L.prep.length<n)L.prep.push(k);lvView()});b.append(el('b',(on?'✓ ':'')+SPELLS[k].n),el('small',SPELLS[k].d));m.append(b)}
     const ok=el('button',L.prepOnly?'Valider':'Suivant','go',()=>{
       if(L.prepOnly){P.prep=L.prep.slice();P.prepOk=false;G.lvl=null;m.hidden=true;log('Sorts préparés : '+P.prep.map(x=>SPELLS[x].n).join(', ')+'.','good');renderBag()}
-      else{L.step=3;lvView()}});
-    ok.disabled=L.prep.length!==3;m.append(ok);
+      else next()});
+    ok.disabled=L.prep.length!==n;m.append(ok);
     if(L.prepOnly)m.append(el('button','Annuler','',()=>{G.lvl=null;m.hidden=true}));
   }else{
-    m.append(el('h2','Prêt pour le niveau 2'));
+    m.append(el('h2','Prêt pour le niveau '+L.T));
     const ul=document.createElement('ul');ul.className='feat';
-    [`PV maximum : ${P.max} → ${P.max+L.gain}`,`Style de combat : ${STYLES[L.style].n}`,'Sorts préparés : '+L.prep.map(x=>SPELLS[x].n).join(', '),'Imposition des mains : 10 PV','Châtiment divin disponible'].forEach(t=>ul.append(el('li',t)));
-    m.append(ul,el('button','Commencer le niveau 2','go',applyLevel));
+    const rows=[`PV maximum : ${P.max} → ${P.max+L.gain+(L.asi==='con'?L.T:0)}`];
+    if(L.style)rows.push('Style de combat : '+STYLES[L.style].n);
+    if(L.asi)rows.push('Caractéristique : '+({str:'Force',cha:'Charisme',con:'Constitution'})[L.asi]+' +2');
+    if(L.T===3)rows.push('Serment de dévotion : Divinité canalisée','3 emplacements de sort');
+    if(L.T!==3)rows.push('Sorts préparés : '+L.prep.map(x=>SPELLS[x].n).join(', '));
+    rows.forEach(t=>ul.append(el('li',t)));
+    m.append(ul,el('button','Commencer le niveau '+L.T,'go',applyLevel));
   }
 }
 function applyLevel(){
-  const L=G.lvl,g=L.gain;
-  P.level=2;P.max+=g;P.hp+=g;P.hmax=10;P.hands+=5;P.style=L.style;P.prep=L.prep.slice();P.prepOk=false;
-  G.lvl=null;$('lv').hidden=true;recalc();renderBag();
-  log(`NIVEAU 2 ! +${g} PV (maximum ${P.max}). Style : ${STYLES[P.style].n}. Sorts préparés : ${P.prep.map(x=>SPELLS[x].n).join(', ')}.`,'crit');
-  float(P,'NIVEAU 2','#e3b441');G.fx.push({k:'heal',x:P.x,y:P.y,t:.8});
+  const L=G.lvl,T=L.T;let g=L.gain;
+  if(L.asi){P.stats[L.asi]+=2;if(L.asi==='con')g+=T}
+  P.level=T;P.max+=g;P.hp+=g;P.hands+=5;
+  if(L.style)P.style=L.style;
+  if(T!==3){P.prep=L.prep.slice();P.prepOk=false}
+  if(T>=3)P.cd=1;
+  recalc();P.slots=Math.min(P.smax,P.slots+(SMAX[T]-SMAX[T-1]));
+  G.lvl=null;$('lv').hidden=true;renderBag();
+  log(`NIVEAU ${T} ! +${g} PV (maximum ${P.max}).`+(T===2?` Style : ${STYLES[P.style].n}.`:'')+(T===3?' Serment de dévotion : Divinité canalisée (Arme sacrée, Renvoi des impies), 3 emplacements de sort.':'')+(T!==3?` Sorts préparés : ${P.prep.map(x=>SPELLS[x].n).join(', ')}.`:''),'crit');
+  float(P,'NIVEAU '+T,'#e3b441');G.fx.push({k:'heal',x:P.x,y:P.y,t:.8});sfx('level');
+}
+/* ---- Divinité canalisée ---- */
+function sacredWeapon(){
+  if(G.dead||!G.started||P.level<3)return;
+  if(!P.cd){log('Divinité canalisée : utilisation épuisée (repos court ou long).','sys');return}
+  P.cd=0;P.swT=60;useAction();recalc();
+  log(`Arme sacrée : votre arme irradie. +${cmod(P.stats.cha)} à l\'attaque pendant 1 minute.`,'good');G.fx.push({k:'heal',x:P.x,y:P.y,t:.8});sfx('chime');
+}
+function turnUnholy(){
+  if(G.dead||!G.started||P.level<3)return;
+  if(!P.cd){log('Divinité canalisée : utilisation épuisée (repos court ou long).','sys');return}
+  const tg=curEnemies().filter(e=>!e.dead&&(e.undead||e.fiend)&&dist(P,e)<=80);
+  if(!tg.length){log('Renvoi des impies : aucun mort-vivant ou fiélon à moins de 30 pieds.','sys');return}
+  P.cd=0;useAction();const dc=8+2+cmod(P.stats.cha);
+  log(`Renvoi des impies : sauvegarde de SAG DD ${dc}.`,'crit');G.fx.push({k:'heal',x:P.x,y:P.y,t:.8});sfx('chime');
+  tg.forEach(e=>{const d=rnd(20)+(e.wis||0),ok=d>=dc;log(`${e.name} : d20+${e.wis||0} = ${d} ${ok?'réussie.':'ratée : il s\'enfuit !'}`,'hit');if(!ok){e.flee=10;float(e,'Fuite','#e3b441')}engage(e)});
 }
 /* ---- sauvegarde / chargement / menu pause ---- */
 function snapshot(){
   return{v:1,t:Date.now(),sc:G.sc,
-   P:{x:P.x,y:P.y,hp:P.hp,max:P.max,xp:P.xp,hands:P.hands,breath:P.breath,sense:P.sense,po:P.po,bag:{...P.bag},eq:{...P.eq},fl:{...P.fl},vis:[...P.vis],q:{...P.q},kills:{...P.kills},gate:P.gate,slots:P.slots,bagmax:P.bagmax,level:P.level,style:P.style,prep:[...P.prep],prepOk:P.prepOk,hmax:P.hmax,face:P.face,sr:P.sr},
+   P:{x:P.x,y:P.y,hp:P.hp,max:P.max,xp:P.xp,hands:P.hands,breath:P.breath,sense:P.sense,po:P.po,bag:{...P.bag},eq:{...P.eq},fl:{...P.fl},vis:[...P.vis],q:{...P.q},kills:{...P.kills},gate:P.gate,slots:P.slots,bagmax:P.bagmax,level:P.level,style:P.style,prep:[...P.prep],prepOk:P.prepOk,hmax:P.hmax,face:P.face,sr:P.sr,rp:{...P.rp},rcd:P.rcd,stats:{...P.stats},cd:P.cd},
    S:SCREENS.map(s=>({
     en:s.enemies.map(e=>({k:e.k,name:e.name,x:e.x,y:e.y,hp:e.hp,dead:e.dead,npc:!!e.npc,pal:e.pal||null,face:e.face})),
     npcs:s.allNpcs.filter(n=>s.npcs.includes(n)).map(n=>[n.id,!!n.gave,n.i||0]),
@@ -1697,7 +1904,7 @@ function snapshot(){
 function restore(sn){
   G.talk=null;G.fade=null;G.trans=null;G.dead=false;G.inCombat=false;G.roundT=0;G.round=0;G.floats=[];G.fx=[];G.sensePulse=0;G.sc=sn.sc;
   const EQ0={head:null,body:'mailles',main:'epee0',off:null,ring1:null,ring2:null,amu:null,boots:null};
-  Object.assign(P,{sr:0,slots:2,eq:{...EQ0},fl:{},vis:[],buff:null,bagmax:12,conc:null,cT:0,smite:false,level:1,style:null,prep:[],prepOk:false,hmax:5,q:{rats:0,colis:0,main:0},kills:{rat:0,griffe:0,zombie:0,croco:0},gate:false},sn.P,{q:{rats:0,colis:0,main:0,...(sn.P.q||{})},kills:{rat:0,griffe:0,zombie:0,croco:0,...(sn.P.kills||{})},prep:[...(sn.P.prep||[])],bag:{...sn.P.bag},eq:{...EQ0,...(sn.P.eq||{})},fl:{...(sn.P.fl||{})},vis:[...(sn.P.vis||[])],dest:null,target:null,pend:null,swing:0,hurt:0,moving:false,acted:true});
+  Object.assign(P,{stats:{str:17,dex:10,con:14,int:8,sag:12,cha:14},cd:1,swT:0,thunder:false,sr:0,rp:{sc:1,x:64,y:100},rcd:0,slots:2,eq:{...EQ0},fl:{},vis:[],buff:null,bagmax:12,conc:null,cT:0,smite:false,level:1,style:null,prep:[],prepOk:false,hmax:5,q:{rats:0,colis:0,main:0},kills:{rat:0,griffe:0,zombie:0,croco:0},gate:false},sn.P,{stats:{str:17,dex:10,con:14,int:8,sag:12,cha:14,...(sn.P.stats||{})},q:{rats:0,colis:0,main:0,omu:0,...(sn.P.q||{})},kills:{rat:0,griffe:0,zombie:0,croco:0,...(sn.P.kills||{})},prep:[...(sn.P.prep||[])],bag:{...sn.P.bag},eq:{...EQ0,...(sn.P.eq||{})},fl:{...(sn.P.fl||{})},vis:[...(sn.P.vis||[])],dest:null,target:null,pend:null,swing:0,hurt:0,moving:false,acted:true});
   if(!sn.P.eq){/* ancienne sauvegarde : l'équipement était un simple drapeau */
     const mv=(id,slot)=>{if(id&&P.bag[id]){if(--P.bag[id]<=0)delete P.bag[id];P.eq[slot]=id}};
     mv(sn.P.wId,'main');mv(sn.P.aId,'body');if(sn.P.shield){mv('bouclier','off')}mv(sn.P.boots?'bottes':null,'boots');
@@ -1902,19 +2109,23 @@ function drawMM(){
   const sc=SCREENS[G.sc],card=$('mmcard');
   const on=sc.gx!==undefined&&(G.sc!==0||P.gate)&&G.started;
   card.hidden=!on;if(!on)return;
-  const c=$('mm').getContext('2d');c.imageSmoothingEnabled=false;
-  R(c,0,0,200,96,'#0b1113');
-  const pos=i=>[SCREENS[i].gx*40+3,SCREENS[i].gy*32+3];
+  const cvm=$('mm'),c=cvm.getContext('2d');c.imageSmoothingEnabled=false;
+  R(c,0,0,cvm.width,cvm.height,'#0b1113');
   const links=i=>{const s=SCREENS[i],o=[];if(s.nb){for(const k of['l','r'])if(s.nb[k]!==undefined&&s.nb[k]>=0)o.push(s.nb[k])}(s.exits||[]).forEach(x=>{if(!SCREENS[x.to].interior)o.push(x.to)});return o.filter(j=>SCREENS[j].gx!==undefined)};
   const seen=new Set();
   P.vis.forEach(i=>{if(SCREENS[i]&&SCREENS[i].gx!==undefined){seen.add(i);links(i).forEach(j=>seen.add(j))}});
-  seen.forEach(i=>{const [x,y]=pos(i);links(i).forEach(j=>{if(!seen.has(j))return;const [x2,y2]=pos(j);c.strokeStyle='#2b3d44';c.lineWidth=3;c.beginPath();c.moveTo(x+17,y+13);c.lineTo(x2+17,y2+13);c.stroke()})});
+  seen.add(G.sc);
+  let x0=9,x1=-9,y0=9,y1=-9;seen.forEach(i=>{const s=SCREENS[i];x0=Math.min(x0,s.gx);x1=Math.max(x1,s.gx);y0=Math.min(y0,s.gy);y1=Math.max(y1,s.gy)});
+  const cw=Math.min(40,Math.floor(cvm.width/(x1-x0+1))),ch=Math.min(32,Math.floor(cvm.height/(y1-y0+1))),bw=cw-6,bh=ch-6;
+  const ox=Math.floor((cvm.width-(x1-x0+1)*cw)/2)+3,oy=Math.floor((cvm.height-(y1-y0+1)*ch)/2)+3;
+  const pos=i=>[ox+(SCREENS[i].gx-x0)*cw,oy+(SCREENS[i].gy-y0)*ch];
+  seen.forEach(i=>{const [x,y]=pos(i);links(i).forEach(j=>{if(!seen.has(j))return;const [x2,y2]=pos(j);c.strokeStyle='#2b3d44';c.lineWidth=3;c.beginPath();c.moveTo(x+bw/2,y+bh/2);c.lineTo(x2+bw/2,y2+bh/2);c.stroke()})});
   seen.forEach(i=>{
     const [x,y]=pos(i),v=P.vis.includes(i),s=SCREENS[i];
-    R(c,x,y,34,26,v?(i===0?'#7a6a52':s.swampy?'#3a4a2a':'#1d5a2a'):'#15222a');
-    if(!v){c.fillStyle='#5a7a84';c.font='bold 14px sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText('?',x+17,y+14)}
-    else{if(s.swamp)R(c,x+4,y+16,26,6,'rgba(120,150,70,.7)');if(i===0)R(c,x+2,y+4,6,18,'#3f2c1a')}
-    if(i===G.sc){c.strokeStyle='#e3b441';c.lineWidth=2;c.strokeRect(x+1,y+1,32,24);R(c,x+15,y+11,4,4,'#e3b441')}
+    R(c,x,y,bw,bh,v?(i===0?'#7a6a52':s.omu?'#5a5a54':s.swampy?'#3a4a2a':'#1d5a2a'):'#15222a');
+    if(!v){c.fillStyle='#5a7a84';c.font='bold 11px sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText('?',x+bw/2,y+bh/2+1)}
+    else{if(s.swamp)R(c,x+3,y+bh-8,bw-6,5,'rgba(120,150,70,.7)');if(i===0)R(c,x+2,y+3,5,bh-8,'#3f2c1a')}
+    if(i===G.sc){c.strokeStyle='#e3b441';c.lineWidth=2;c.strokeRect(x+1,y+1,bw-2,bh-2);R(c,x+bw/2-2,y+bh/2-2,4,4,'#e3b441')}
   });
 }
 /* ---- musique et bruitages (WebAudio, tout est synthétisé) ---- */
@@ -2075,201 +2286,6 @@ document.addEventListener('visibilitychange',()=>{if(!AU.ctx)return;if(document.
   collect=function(l,s){const had=l.po;_col(l,s);if(had)sfx('coin')};
   openLevelUp=function(){sfx('level');_lvl()};
 }
-/* ---- portraits illustrés (SVG, style peint, pas pixel) pour Guesh et les monstres ---- */
-function srnd(seed){let s=seed*9301+49297;return()=>{s=(s*9301+49297)%233280;return s/233280}}
-function strokes(seed,n,x0,x1,y0,y1,col,len,w,op){
-  const r=srnd(seed);let o='';
-  for(let i=0;i<n;i++){const x=x0+r()*(x1-x0),y=y0+r()*(y1-y0),a=(r()-.5)*1.2-1.2,l=len*(.5+r());
-    o+=`<path d="M${x.toFixed(1)} ${y.toFixed(1)}l${(Math.cos(a)*l).toFixed(1)} ${(Math.sin(a)*l).toFixed(1)}" stroke="${col}" stroke-width="${w}" stroke-linecap="round" opacity="${op}"/>`}
-  return o;
-}
-function svgWrap(p,inner,bgA,bgB,glow){
-  return `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" role="img">
-<defs>
-<radialGradient id="${p}bg" cx=".55" cy=".35" r=".85"><stop offset="0" stop-color="${bgA}"/><stop offset="1" stop-color="${bgB}"/></radialGradient>
-<radialGradient id="${p}vg" cx=".5" cy=".5" r=".72"><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".65"/></radialGradient>
-<radialGradient id="${p}gl" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="${glow}" stop-opacity=".55"/><stop offset="1" stop-color="${glow}" stop-opacity="0"/></radialGradient>
-<filter id="${p}b2" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.6"/></filter>
-<filter id="${p}b1" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="1.1"/></filter>
-</defs>
-<rect width="120" height="120" fill="url(#${p}bg)"/><circle cx="60" cy="52" r="58" fill="url(#${p}gl)"/>
-${inner}
-<rect width="120" height="120" fill="url(#${p}vg)"/></svg>`;
-}
-/* --- Guesh, drakéide d'or (profil trois-quarts vers la droite) --- */
-function artGuesh(p,eq){
-  const head=eq&&eq.head?ITEMS[eq.head]:null,body=eq&&eq.body?eq.body:null;
-  const plate=body==='harnois'||body==='mailles1'||body==='clibanion';
-  const armA=body==='cuir'?'#a8744a':plate?'#f2f6f8':'#c6d0d6',armB=body==='cuir'?'#5a3a22':plate?'#7b8a95':'#6d7a84';
-  const defs=`<defs>
-<linearGradient id="${p}sc" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe08a"/><stop offset=".35" stop-color="#f0b43a"/><stop offset=".75" stop-color="#c8741c"/><stop offset="1" stop-color="#8a4412"/></linearGradient>
-<linearGradient id="${p}jw" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4d27a"/><stop offset="1" stop-color="#b8782a"/></linearGradient>
-<linearGradient id="${p}iv" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff6dc"/><stop offset="1" stop-color="#b89c68"/></linearGradient>
-<linearGradient id="${p}st" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${armA}"/><stop offset="1" stop-color="${armB}"/></linearGradient>
-<linearGradient id="${p}hm" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4f8fa"/><stop offset=".5" stop-color="#9aa8b2"/><stop offset="1" stop-color="#4a5660"/></linearGradient>
-<radialGradient id="${p}ey" cx=".4" cy=".4" r=".7"><stop offset="0" stop-color="#fff2a0"/><stop offset=".5" stop-color="#ffb41e"/><stop offset="1" stop-color="#c25a08"/></radialGradient>
-<pattern id="${p}sp" width="7" height="6" patternUnits="userSpaceOnUse"><path d="M0 6 Q3.5 0 7 6" fill="none" stroke="#7a3a0c" stroke-width=".7" opacity=".5"/><path d="M-3.5 3 Q0 -3 3.5 3" fill="none" stroke="#7a3a0c" stroke-width=".7" opacity=".5" transform="translate(3.5 3)"/></pattern>
-<clipPath id="${p}cp"><path id="${p}hd" d="M30 60 C25 40 36 22 56 21 C70 20 79 28 85 39 L106 45 C112 47 112 56 106 59 L92 64 C86 76 73 86 58 86 C43 86 33 76 30 60Z"/></clipPath>
-</defs>`;
-  let s=defs;
-  /* épaulière et buste */
-  s+=`<path d="M0 120 C4 98 22 90 46 92 L86 92 C106 92 118 104 120 120Z" fill="url(#${p}st)"/>`;
-  s+=`<path d="M0 120 C2 100 12 88 28 86 C42 85 46 98 44 120Z" fill="url(#${p}st)" stroke="#2a2018" stroke-width=".8"/><path d="M6 108 C14 96 28 92 40 98" fill="none" stroke="#e3b441" stroke-width="2" stroke-linecap="round"/><circle cx="14" cy="104" r="1.6" fill="#e3b441"/><circle cx="26" cy="96" r="1.6" fill="#e3b441"/>`;
-  if(body!=='cuir')s+=strokes(5,26,50,116,96,120,'#fff',3,.6,.28);
-  s+=`<path d="M52 92 C62 98 78 98 90 92" fill="none" stroke="#e3b441" stroke-width="2.4" stroke-linecap="round"/>`;
-  /* cou */
-  s+=`<path d="M46 74 C46 90 52 98 64 98 L86 94 C80 86 76 78 72 70Z" fill="url(#${p}sc)"/><path d="M46 74 C46 90 52 98 64 98 L86 94 C80 86 76 78 72 70Z" fill="url(#${p}sp)"/>`;
-  s+=`<path d="M58 80 C60 90 70 94 84 92 C78 86 74 80 72 72Z" fill="url(#${p}jw)" opacity=".85"/>`;
-  /* cornes arrière */
-  s+=`<path d="M40 34 C26 28 12 34 4 52 C16 46 28 46 38 50Z" fill="url(#${p}iv)" stroke="#6a4a1c" stroke-width=".8"/><path d="M46 26 C42 12 30 4 16 6 C28 12 34 22 38 34Z" fill="url(#${p}iv)" stroke="#6a4a1c" stroke-width=".8"/>`;
-  s+=`<path d="M10 46 C18 42 26 42 34 46M20 12 C28 14 34 20 38 28" fill="none" stroke="#8a6a30" stroke-width=".7" opacity=".7"/>`;
-  /* crête dorsale */
-  for(let i=0;i<4;i++)s+=`<path d="M${30+i*3} ${52+i*8} l-9 ${2+i} l8 ${5}z" fill="url(#${p}jw)" stroke="#7a3a0c" stroke-width=".6"/>`;
-  /* tête */
-  s+=`<use href="#${p}hd" fill="url(#${p}sc)"/><g clip-path="url(#${p}cp)">
-<rect width="120" height="120" fill="url(#${p}sp)"/>
-<ellipse cx="46" cy="76" rx="28" ry="22" fill="#4a1c04" opacity=".55" filter="url(#${p}b2)"/>
-<ellipse cx="76" cy="30" rx="22" ry="9" fill="#fff2b0" opacity=".6" filter="url(#${p}b2)"/>
-<ellipse cx="98" cy="46" rx="12" ry="4" fill="#fff6c8" opacity=".55" filter="url(#${p}b1)"/>
-<path d="M58 86 C74 86 88 74 94 62 L108 58 C102 74 86 90 66 92Z" fill="url(#${p}jw)"/>
-${strokes(11,14,38,100,28,84,'#fff2b0',4,.6,.35)}
-</g><use href="#${p}hd" fill="none" stroke="#5a2a08" stroke-width="1.2"/>`;
-  /* arcade, œil, narine, gueule */
-  s+=`<path d="M62 38 C70 32 82 32 90 38 L92 42 C84 38 70 38 62 44Z" fill="#a85a14" stroke="#5a2a08" stroke-width=".8"/>`;
-  s+=`<path d="M64 38 L66 30 L70 36 L73 28 L76 35 L80 29 L82 36 L87 32 L89 38Z" fill="url(#${p}jw)" stroke="#6a3208" stroke-width=".6"/>`;
-  s+=`<path d="M66 44 C72 38 84 38 90 44 C84 49 72 49 66 44Z" fill="#2a1204"/><ellipse cx="78" cy="44" rx="6" ry="4.4" fill="url(#${p}ey)"/><ellipse cx="78.4" cy="44" rx="1.3" ry="4" fill="#1a0a02"/><circle cx="75.6" cy="42.2" r="1.3" fill="#fff"/>`;
-  s+=`<ellipse cx="104" cy="49" rx="2.2" ry="1.6" fill="#3a1604" transform="rotate(-15 104 49)"/>`;
-  s+=`<path d="M107 58 C98 62 86 62 74 60 C68 58 64 56 62 52" fill="none" stroke="#3a1604" stroke-width="1.4" stroke-linecap="round"/>`;
-  for(let i=0;i<6;i++)s+=`<path d="M${100-i*6} ${60-i*.3} l1.4 3.2 l1.4 -3.4z" fill="#fff8e6" stroke="#8a6a3a" stroke-width=".3"/>`;
-  s+=`<path d="M50 50 C56 54 60 62 58 72" fill="none" stroke="#5a2a08" stroke-width=".8" opacity=".55"/>`;
-  /* cicatrice */
-  s+=`<path d="M56 56 l10 12" stroke="#7a2a14" stroke-width="1.2" stroke-linecap="round" opacity=".8"/><path d="M58 55 l2 1M60 58 l2 1M62 61 l2 1" stroke="#f1c8a0" stroke-width=".6" opacity=".7"/>`;
-  /* casque */
-  if(head){
-    const mg=head.ic&&head.ic[1]||'#b8c2c9';
-    s+=`<path d="M28 56 C24 32 38 14 58 14 C74 14 84 22 87 36 L72 34 C66 34 62 38 58 42 C48 44 40 50 36 58Z" fill="url(#${p}hm)" stroke="#2a3238" stroke-width="1.2"/>`;
-    s+=`<path d="M30 52 C30 34 42 20 58 19 C70 19 80 26 83 34" fill="none" stroke="#e3b441" stroke-width="2" stroke-linecap="round"/>`;
-    s+=`<path d="M82 34 L88 54 L83 56 L78 40Z" fill="url(#${p}hm)" stroke="#2a3238" stroke-width=".9"/>`;
-    s+=`<path d="M52 14 C56 6 66 6 72 14Z" fill="#c8483b" stroke="#6a1a14" stroke-width=".8"/><path d="M40 24 C46 18 56 16 62 17" fill="none" stroke="#fff" stroke-width="1.4" opacity=".6" stroke-linecap="round"/>`;
-    s+=`<circle cx="38" cy="46" r="1.5" fill="#e3b441"/><circle cx="46" cy="30" r="1.5" fill="#e3b441"/>`;
-  }
-  /* braises */
-  s+=strokes(23,8,80,116,6,50,'#ffb040',2,1.3,.7);
-  return svgWrap(p,s,'#5a3a18','#0e0905','#ff9a30');
-}
-/* --- monstres (regardent vers la gauche) --- */
-function artRat(p){
-  let s=`<defs><linearGradient id="${p}fu" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9a8068"/><stop offset=".6" stop-color="#6a5240"/><stop offset="1" stop-color="#3a2c22"/></linearGradient>
-<radialGradient id="${p}ey" cx=".4" cy=".4" r=".7"><stop offset="0" stop-color="#ffd0c0"/><stop offset=".4" stop-color="#e8302a"/><stop offset="1" stop-color="#5a0808"/></radialGradient>
-<radialGradient id="${p}ea" cx=".5" cy=".55" r=".6"><stop offset="0" stop-color="#e8a8a0"/><stop offset="1" stop-color="#8a5048"/></radialGradient></defs>`;
-  s+=`<path d="M40 120 C48 100 80 96 108 104 L120 120Z" fill="#3a2c22"/>`;
-  s+=`<circle cx="84" cy="34" r="18" fill="url(#${p}fu)" stroke="#2a1e16" stroke-width="1"/><circle cx="84" cy="34" r="12" fill="url(#${p}ea)"/><circle cx="52" cy="28" r="14" fill="url(#${p}fu)" stroke="#2a1e16" stroke-width="1"/><circle cx="52" cy="28" r="9" fill="url(#${p}ea)"/>`;
-  s+=`<path d="M98 72 C98 46 80 32 60 36 C48 38 40 46 32 54 L8 64 C3 68 6 76 12 77 L32 80 C42 94 62 100 80 96 C92 92 98 84 98 72Z" fill="url(#${p}fu)" stroke="#2a1e16" stroke-width="1.2"/>`;
-  s+=`<ellipse cx="60" cy="40" rx="24" ry="8" fill="#e6cfa8" opacity=".35" filter="url(#${p}b2)"/><ellipse cx="70" cy="90" rx="26" ry="9" fill="#1a1008" opacity=".55" filter="url(#${p}b2)"/>`;
-  s+=strokes(3,70,20,96,40,96,'#2a1c12',6,1,.55)+strokes(4,40,20,96,40,90,'#c8b090',5,.8,.5);
-  s+=`<circle cx="8" cy="68" r="4.6" fill="#d98a86" stroke="#6a2a26" stroke-width=".8"/><circle cx="6.6" cy="66.6" r="1.4" fill="#fff" opacity=".6"/>`;
-  s+=`<path d="M12 78 l1 9 l4 -1 l0 -8z" fill="#f4e6a8" stroke="#8a7a3a" stroke-width=".7"/><path d="M19 80 l1 8 l4 -1 l-1 -8z" fill="#f4e6a8" stroke="#8a7a3a" stroke-width=".7"/>`;
-  s+=`<path d="M28 58 C34 50 44 50 50 56 C44 62 34 62 28 58Z" fill="#1a0a08"/><ellipse cx="40" cy="56.5" rx="5.4" ry="4" fill="url(#${p}ey)"/><circle cx="38.4" cy="55" r="1.3" fill="#fff"/>`;
-  s+=`<g stroke="#e8e0cc" stroke-width=".8" stroke-linecap="round" fill="none"><path d="M18 68 C8 62 2 60 -2 58M18 70 C8 70 2 72 -2 74M20 72 C12 78 6 82 2 86M22 66 C14 56 8 52 4 50"/></g>`;
-  s+=`<path d="M52 44 l14 14 M54 42 l14 14" stroke="#7a2a22" stroke-width="1.2" opacity=".8" stroke-linecap="round"/>`;
-  return svgWrap(p,s,'#3a2a20','#0b0806','#c08040');
-}
-function artHuman(p,pal,bandit){
-  pal=pal||{};const sk=pal.skin||'#c79b7b',hat=pal.hat||'#2f2432',hair=pal.hair||'#2a1f2a';
-  let s=`<defs><linearGradient id="${p}sk" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe4c8" stop-opacity=".55"/><stop offset=".5" stop-color="${sk}"/><stop offset="1" stop-color="#4a2a1a"/></linearGradient>
-<linearGradient id="${p}cl" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${bandit?'#4a3a52':hat}"/><stop offset="1" stop-color="#0c0810"/></linearGradient></defs>`;
-  s+=`<path d="M0 120 C6 100 28 96 60 98 C92 96 114 100 120 120Z" fill="url(#${p}cl)"/><path d="M40 100 L60 112 L80 100" fill="none" stroke="#8a6a3a" stroke-width="2.2"/>`;
-  s+=`<path d="M46 80 L48 98 L72 98 L74 80Z" fill="${sk}"/><path d="M46 80 L48 98 L72 98 L74 80Z" fill="#2a1408" opacity=".4"/>`;
-  s+=`<path d="M34 62 C32 38 44 26 60 26 C76 26 88 38 86 62 C86 80 76 92 60 92 C44 92 34 80 34 62Z" fill="url(#${p}sk)" stroke="#2a1408" stroke-width="1"/>`;
-  s+=`<ellipse cx="50" cy="48" rx="14" ry="8" fill="#fff" opacity=".18" filter="url(#${p}b2)"/><ellipse cx="72" cy="80" rx="16" ry="10" fill="#1a0a04" opacity=".5" filter="url(#${p}b2)"/>`;
-  s+=strokes(8,40,40,82,66,90,'#1a0e08',3,.8,.5);
-  s+=`<path d="M42 52 C46 49 52 49 56 52M64 52 C68 49 74 49 78 52" stroke="#1a0e08" stroke-width="2.4" fill="none" stroke-linecap="round"/>`;
-  s+=`<ellipse cx="49" cy="57" rx="4.6" ry="2.6" fill="#f4ecd8"/><ellipse cx="71" cy="57" rx="4.6" ry="2.6" fill="#f4ecd8"/><circle cx="49.5" cy="57" r="2.1" fill="${bandit?'#c89a28':'#3a5a7a'}"/><circle cx="71.5" cy="57" r="2.1" fill="${bandit?'#c89a28':'#3a5a7a'}"/><circle cx="49" cy="56.4" r=".8" fill="#fff"/><circle cx="71" cy="56.4" r=".8" fill="#fff"/>`;
-  s+=`<path d="M60 56 l-3 12 l5 1" fill="none" stroke="#6a3a22" stroke-width="1.2" stroke-linecap="round"/>`;
-  s+=`<path d="M47 76 C54 79 66 79 73 76" stroke="#5a2a1c" stroke-width="1.6" fill="none" stroke-linecap="round"/>`;
-  s+=`<path d="M70 44 L56 74" stroke="#8a2a20" stroke-width="1.6" stroke-linecap="round"/><path d="M68 47 l3 -1M64 54 l3 -1M60 62 l3 -1" stroke="#f0d0b8" stroke-width=".7"/>`;
-  if(bandit){
-    s+=`<path d="M32 66 C40 74 50 80 60 80 C70 80 80 74 88 66 L90 84 C80 96 70 98 60 98 C50 98 40 96 30 84Z" fill="#8a1c18" stroke="#3a0806" stroke-width="1"/><path d="M40 78 l40 4M42 86 l36 4" stroke="#c84a3a" stroke-width=".8" opacity=".6"/>`;
-    s+=`<path d="M22 70 C14 40 30 12 60 12 C90 12 106 40 98 70 L88 74 C92 50 86 30 60 28 C34 30 28 50 32 74Z" fill="url(#${p}cl)" stroke="#06040a" stroke-width="1.2"/><path d="M34 34 C44 24 76 24 86 34" fill="none" stroke="#6a5a78" stroke-width="1.2" opacity=".6"/>`;
-    s+=`<path d="M36 46 C46 40 74 40 84 46 L84 52 C74 46 46 46 36 52Z" fill="#0a0610" opacity=".55"/><ellipse cx="49" cy="57" rx="5" ry="2.8" fill="none"/>`;
-  }else{
-    s+=`<path d="M32 42 C30 20 46 12 60 12 C76 12 90 20 88 42 C80 34 70 32 60 32 C50 32 40 34 32 42Z" fill="${hair}" stroke="#0a0608" stroke-width="1"/><path d="M28 40 C40 26 80 26 92 40 L92 44 C80 36 40 36 28 44Z" fill="${hat}" stroke="#0a0608" stroke-width="1"/>`;
-    s+=strokes(9,16,36,84,14,34,'#fff',4,.6,.2);
-  }
-  return svgWrap(p,s,bandit?'#3a2a34':'#3c3a2e','#0b0907',bandit?'#b04030':'#c0a060');
-}
-function artJaguar(p){
-  let s=`<defs><linearGradient id="${p}fu" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd878"/><stop offset=".55" stop-color="#d8962c"/><stop offset="1" stop-color="#7a4412"/></linearGradient>
-<radialGradient id="${p}ey" cx=".4" cy=".4" r=".7"><stop offset="0" stop-color="#f4ff9a"/><stop offset=".5" stop-color="#9ac82a"/><stop offset="1" stop-color="#3a5a0a"/></radialGradient></defs>`;
-  s+=`<path d="M30 120 C40 100 80 96 112 104 L120 120Z" fill="#a8681c"/>`;
-  s+=`<path d="M78 34 C78 14 94 8 100 24 C102 30 100 36 98 40Z" fill="url(#${p}fu)" stroke="#2a1604" stroke-width="1"/><path d="M84 32 C84 22 92 18 95 26 C96 30 94 34 92 36Z" fill="#2a1408"/>`;
-  s+=`<path d="M40 40 C34 22 18 20 14 34 C12 42 18 46 24 50Z" fill="url(#${p}fu)" stroke="#2a1604" stroke-width="1"/><path d="M34 40 C30 30 22 28 20 36 C20 40 24 42 28 44Z" fill="#2a1408"/>`;
-  s+=`<path d="M100 66 C100 38 82 24 58 26 C34 28 18 42 16 62 C14 82 30 100 58 100 C84 100 100 88 100 66Z" fill="url(#${p}fu)" stroke="#2a1604" stroke-width="1.2"/>`;
-  s+=`<ellipse cx="56" cy="34" rx="26" ry="8" fill="#fff0b0" opacity=".5" filter="url(#${p}b2)"/><ellipse cx="78" cy="88" rx="26" ry="12" fill="#2a1204" opacity=".5" filter="url(#${p}b2)"/>`;
-  const r=srnd(21);for(let i=0;i<20;i++){const x=24+r()*70,y=30+r()*60;s+=`<ellipse cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" rx="${(2+r()*2).toFixed(1)}" ry="${(1.6+r()*1.6).toFixed(1)}" fill="none" stroke="#1a0c04" stroke-width="1.6" opacity=".75"/>`}
-  s+=`<path d="M18 70 C26 62 40 62 44 70 C44 84 34 92 24 90 C16 86 14 78 18 70Z" fill="#f6ecd0" stroke="#3a2008" stroke-width="1"/>`;
-  s+=`<path d="M12 70 C12 64 18 62 24 64 C28 66 28 72 24 74 C18 76 12 74 12 70Z" fill="#2a1612"/><ellipse cx="17" cy="66" rx="3" ry="1.5" fill="#fff" opacity=".4"/>`;
-  s+=`<path d="M22 82 C30 88 38 88 44 84" fill="none" stroke="#2a0c08" stroke-width="1.6"/><path d="M24 83 l2 7 l3 -6z M38 87 l1 7 l3 -7z" fill="#fff" stroke="#8a7a5a" stroke-width=".6"/>`;
-  s+=`<path d="M44 50 C52 44 64 46 68 52 C62 58 50 58 44 50Z" fill="#1a0c04"/><ellipse cx="56" cy="51" rx="5.4" ry="3.6" fill="url(#${p}ey)"/><ellipse cx="56" cy="51" rx="1.1" ry="3.4" fill="#0a0502"/><circle cx="53.8" cy="49.4" r="1.2" fill="#fff"/>`;
-  s+=`<path d="M70 50 C76 46 84 48 86 52 C82 56 74 56 70 50Z" fill="#1a0c04"/><ellipse cx="78" cy="51" rx="4" ry="3" fill="url(#${p}ey)"/><ellipse cx="78" cy="51" rx="1" ry="2.8" fill="#0a0502"/>`;
-  s+=`<path d="M30 56 l14 -4M32 62 l12 -2" stroke="#2a1408" stroke-width="2" stroke-linecap="round"/>`;
-  s+=`<g stroke="#fff" stroke-width=".8" fill="none" opacity=".9"><path d="M20 78 C10 74 4 76 0 80M22 82 C12 84 6 88 2 92"/></g>`;
-  s+=strokes(5,30,22,96,34,96,'#fff0b0',4,.7,.3);
-  return svgWrap(p,s,'#3a4a1c','#0a0d05','#b8c84a');
-}
-function artStirge(p){
-  let s=`<defs><radialGradient id="${p}bd" cx=".4" cy=".35" r=".8"><stop offset="0" stop-color="#e8806a"/><stop offset=".5" stop-color="#b8402c"/><stop offset="1" stop-color="#4a1410"/></radialGradient>
-<linearGradient id="${p}wg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e8c8b0" stop-opacity=".75"/><stop offset="1" stop-color="#8a5a48" stop-opacity=".35"/></linearGradient></defs>`;
-  s+=`<path d="M70 52 C80 20 104 6 116 10 C112 30 100 46 84 60Z" fill="url(#${p}wg)" stroke="#5a2a20" stroke-width="1"/><path d="M72 54 C84 34 98 20 112 12M76 56 C90 42 102 30 112 24M80 58 C92 50 102 42 110 36" stroke="#8a3a2a" stroke-width=".8" fill="none"/>`;
-  s+=`<path d="M60 40 C60 14 80 2 90 2 C84 22 76 36 70 50Z" fill="url(#${p}wg)" stroke="#5a2a20" stroke-width="1"/><path d="M62 38 C68 22 76 12 86 6" stroke="#8a3a2a" stroke-width=".8" fill="none"/>`;
-  s+=`<ellipse cx="68" cy="76" rx="32" ry="26" fill="url(#${p}bd)" stroke="#2a0a08" stroke-width="1.2"/>`;
-  s+=`<ellipse cx="60" cy="64" rx="20" ry="8" fill="#ffc0a8" opacity=".35" filter="url(#${p}b2)"/><ellipse cx="82" cy="92" rx="20" ry="8" fill="#1a0404" opacity=".6" filter="url(#${p}b2)"/>`;
-  s+=strokes(2,40,40,98,56,100,'#3a0c08',5,1,.4)+strokes(7,24,40,98,56,96,'#ffb0a0',4,.7,.3);
-  s+=`<path d="M40 70 C30 66 16 62 2 62 L2 66 C16 68 30 72 40 76Z" fill="#c8a070" stroke="#4a2a10" stroke-width="1"/><path d="M2 62 L-6 64 L2 66Z" fill="#fff" stroke="#4a2a10" stroke-width=".6"/>`;
-  s+=`<path d="M10 63 C14 70 20 72 30 72" stroke="#8a1a14" stroke-width="2" fill="none" opacity=".8"/>`;
-  s+=`<circle cx="50" cy="62" r="6" fill="#1a0606"/><circle cx="50" cy="62" r="3.6" fill="#ff3a24"/><circle cx="48.6" cy="60.6" r="1.4" fill="#fff"/><circle cx="62" cy="58" r="4.4" fill="#1a0606"/><circle cx="62" cy="58" r="2.6" fill="#ff3a24"/><circle cx="61" cy="57" r="1" fill="#fff"/>`;
-  s+=`<g stroke="#2a0c08" stroke-width="2" fill="none" stroke-linecap="round"><path d="M56 96 C52 106 46 112 38 116M66 100 C66 110 62 116 56 120M78 100 C80 110 86 114 92 118"/></g>`;
-  return svgWrap(p,s,'#4a2020','#0d0505','#ff5a3a');
-}
-function artCroco(p){
-  let s=`<defs><linearGradient id="${p}sc" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9ac85a"/><stop offset=".5" stop-color="#4a7a2a"/><stop offset="1" stop-color="#1a3a14"/></linearGradient>
-<radialGradient id="${p}ey" cx=".4" cy=".4" r=".7"><stop offset="0" stop-color="#fff6a0"/><stop offset=".5" stop-color="#e8b81c"/><stop offset="1" stop-color="#7a4a08"/></radialGradient></defs>`;
-  s+=`<rect y="86" width="120" height="34" fill="#12301f" opacity=".9"/><path d="M0 92 C20 88 40 96 60 90 C80 84 100 94 120 90" fill="none" stroke="#6ab88a" stroke-width="1" opacity=".5"/>`;
-  s+=`<path d="M112 60 C110 40 94 30 78 34 C62 32 40 40 16 54 C4 58 2 64 8 68 L12 72 C28 72 44 74 60 76 C80 82 106 78 112 60Z" fill="url(#${p}sc)" stroke="#0a1a08" stroke-width="1.3"/>`;
-  s+=`<path d="M10 70 C30 70 46 72 62 76 C46 86 26 86 12 78Z" fill="#cfe090" stroke="#0a1a08" stroke-width="1"/><path d="M14 72 C30 72 46 74 60 77 C46 84 28 84 16 78Z" fill="#8a2a22"/>`;
-  for(let i=0;i<9;i++){const x=12+i*5.2;s+=`<path d="M${x} 70 l2 5 l2 -5z" fill="#fff8e6" stroke="#7a7050" stroke-width=".3"/><path d="M${x+1} 78 l2 -5 l2 5z" fill="#fff8e6" stroke="#7a7050" stroke-width=".3"/>`}
-  s+=`<ellipse cx="60" cy="42" rx="32" ry="9" fill="#e8ffa0" opacity=".35" filter="url(#${p}b2)"/><ellipse cx="86" cy="70" rx="24" ry="10" fill="#0a1a08" opacity=".5" filter="url(#${p}b2)"/>`;
-  const r=srnd(33);for(let i=0;i<34;i++){const x=22+r()*86,y=34+r()*38;s+=`<ellipse cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" rx="${(2+r()*2).toFixed(1)}" ry="${(1.4+r()*1.4).toFixed(1)}" fill="#2a4a1a" stroke="#0a1a08" stroke-width=".6" opacity=".7"/>`}
-  s+=`<ellipse cx="10" cy="58" rx="3.4" ry="2.4" fill="#142a10"/><ellipse cx="9" cy="57" rx="1" ry=".7" fill="#9ab88a"/>`;
-  s+=`<path d="M60 38 C60 28 76 26 84 36 C80 44 66 46 60 38Z" fill="url(#${p}sc)" stroke="#0a1a08" stroke-width="1"/><ellipse cx="72" cy="36" rx="7" ry="5.4" fill="url(#${p}ey)" stroke="#2a1a04" stroke-width=".8"/><ellipse cx="72" cy="36" rx="1.3" ry="5" fill="#0a0502"/><circle cx="69.6" cy="34" r="1.3" fill="#fff"/>`;
-  s+=`<path d="M58 34 C66 24 82 24 88 32" fill="none" stroke="#a8d878" stroke-width="1.2" opacity=".6"/>`;
-  return svgWrap(p,s,'#2a4a3a','#06100a','#78c898');
-}
-function artZombie(p,pal){
-  let s=`<defs><linearGradient id="${p}sk" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b8d4a8"/><stop offset=".5" stop-color="#7a9a6a"/><stop offset="1" stop-color="#2a3a24"/></linearGradient>
-<radialGradient id="${p}ey" cx=".5" cy=".5" r=".6"><stop offset="0" stop-color="#f4ffc8"/><stop offset=".6" stop-color="#9ae86a"/><stop offset="1" stop-color="#2a6a1a" stop-opacity="0"/></radialGradient></defs>`;
-  s+=`<path d="M0 120 C8 102 30 98 60 100 C90 98 112 102 120 120Z" fill="#3a3a2a"/><path d="M30 106 l8 10M82 104 l-6 12M54 108 l2 10" stroke="#1a1a10" stroke-width="2"/>`;
-  s+=`<path d="M46 82 L48 100 L72 100 L74 82Z" fill="#5a7a4a"/>`;
-  s+=`<path d="M34 60 C30 36 44 22 60 22 C78 22 90 36 86 60 C86 74 80 90 70 94 L50 94 C40 90 34 76 34 60Z" fill="url(#${p}sk)" stroke="#1a2a14" stroke-width="1.2"/>`;
-  s+=`<ellipse cx="50" cy="44" rx="14" ry="8" fill="#e8ffd8" opacity=".25" filter="url(#${p}b2)"/><ellipse cx="74" cy="80" rx="14" ry="10" fill="#0a1a08" opacity=".6" filter="url(#${p}b2)"/>`;
-  s+=`<path d="M36 40 C40 20 80 18 84 40 C76 30 44 30 36 40Z" fill="#2a3a22"/><path d="M38 36 l-8 14 M50 28 l-4 -12 M70 27 l4 -12 M82 34 l10 10" stroke="#2a3a22" stroke-width="2.4" stroke-linecap="round"/>`;
-  s+=`<ellipse cx="49" cy="52" rx="7.6" ry="6" fill="#0a1208"/><ellipse cx="73" cy="52" rx="7.6" ry="6" fill="#0a1208"/><circle cx="49" cy="52" r="5.6" fill="url(#${p}ey)"/><circle cx="73" cy="52" r="5.6" fill="url(#${p}ey)"/><circle cx="49" cy="52" r="1.6" fill="#0a1a08"/><circle cx="73" cy="52" r="1.6" fill="#0a1a08"/>`;
-  s+=`<path d="M60 56 l-3 10 l6 0z" fill="#1a2a14" opacity=".7"/>`;
-  s+=`<path d="M46 74 C54 80 68 80 76 74 L74 86 C66 92 56 92 48 86Z" fill="#1a0a0a"/>`;
-  for(let i=0;i<7;i++)s+=`<path d="M${48+i*4} 76 l1.6 4 l1.6 -4z" fill="#d8d4a8" stroke="#6a6a3a" stroke-width=".3"/>`;
-  s+=`<path d="M40 64 l8 6 M78 66 l-6 8" stroke="#4a1a18" stroke-width="1.6" opacity=".8"/><path d="M36 58 l6 2 M36 62 l6 0 M36 66 l6 -2" stroke="#d8d4b0" stroke-width=".7" opacity=".7"/><path d="M64 36 c4 4 10 6 14 4" stroke="#4a1a18" stroke-width="2" fill="none" opacity=".7"/>`;
-  s+=strokes(6,22,38,84,30,90,'#1a2a14',4,.8,.4);
-  s+=`<g fill="#1a1a10" opacity=".8"><circle cx="30" cy="28" r="1.2"/><circle cx="92" cy="34" r="1.2"/><circle cx="24" cy="44" r="1"/></g>`;
-  return svgWrap(p,s,'#2a3a2a','#060a06','#7ac85a');
-}
-const _artCache={};
-function artFor(who,p){
-  /* who : 'guesh' ou un monstre */
-  if(who.isP){const k='G'+(P.eq.head||'')+'|'+(P.eq.body||'');if(!_artCache[k+p])_artCache[k+p]=artGuesh(p,P.eq);return _artCache[k+p]}
-  const k=who.k||'bandit';
-  if(k==='rat')return artRat(p);if(k==='jaguar')return artJaguar(p);if(k==='stirge')return artStirge(p);if(k==='croco')return artCroco(p);if(k==='zombie')return artZombie(p,who.pal);
-  return artHuman(p,who.pal,k==='bandit');
-}
 /* ---- paramètres, combat manuel (barre de timing), repos, HUD de combat ---- */
 const OPT={auto:true};
 try{const o=JSON.parse(localStorage.getItem('nianzarhu-opts')||'null');if(o&&typeof o.auto==='boolean')OPT.auto=o.auto}catch(e){}
@@ -2345,7 +2361,7 @@ function startRest(kind){
 function finishRest(kind){
   const r=$('rst');r.hidden=true;G.rst=null;if(G.dead)return;
   if(kind==='court'){
-    const d=roll(1,10,2),h=Math.min(d.t,P.max-P.hp);P.hp+=h;P.breath=1;P.sr++;
+    const d=roll(1,10,2),h=Math.min(d.t,P.max-P.hp);P.hp+=h;P.breath=1;P.cd=1;P.sr++;
     log(`Repos court (${P.sr}/2) : dé de vie 1d10 (${d.r[0]}) +2 = ${d.t}, +${h} PV. Souffle draconique rechargé.`,'good');if(h)float(P,'+'+h,'#6fb36a');sfx('heal');
     return;
   }
@@ -2355,7 +2371,7 @@ function finishRest(kind){
     for(let i=0;i<2;i++){const k=kinds[Math.floor(Math.random()*kinds.length)],x=Math.max(14,Math.min(W-14,P.x+(i?44:-44))),y=Math.max((SCREENS[G.sc].ymin||66)+6,Math.min(150,P.y+(i?10:-6)));const e=spawnFoe(k,x,y);engage(e)}
     return;
   }
-  P.hp=P.max;P.hands=P.hmax;P.prepOk=P.level>=2;P.breath=1;P.sense=3;P.slots=2;P.sr=0;
+  P.hp=P.max;P.hands=P.hmax;P.prepOk=P.level>=2;P.breath=1;P.sense=3;P.slots=P.smax;P.sr=0;P.cd=1;
   log('Repos long : PV, imposition des mains, souffle, sens divin et emplacements de sort restaurés. Les repos courts sont de nouveau disponibles (2).','good');sfx('heal');float(P,'Repos','#6fb36a');
 }
 $('lr').onclick=longRest;
@@ -2373,23 +2389,23 @@ function uiTick(){
   const lp=$('lpor');if(lp){const c=lp.getContext('2d');c.imageSmoothingEnabled=false;c.clearRect(0,0,36,40);person(c,18,28,'d',PAL_P,{dragon:1,eq:P.eq,moving:false})}
   const k=JSON.stringify(P.eq);if(k!==_eqKey){_eqKey=k;$('eqline').innerHTML=eqText()}
   $('lr').disabled=!G.started||G.inCombat||!!G.rst;
-  /* HUD de combat */
-  const cb=$('cbt'),fs=G.inCombat&&!G.dead?foeSel():null;
-  if(!fs){cb.hidden=true;_cbtKey=''}
-  else{
-    cb.hidden=false;
-    const key='G'+(P.eq.head||'')+(P.eq.body||'')+'|'+fs.k+(fs.pal?fs.pal.skin:'');
-    if(key!==_cbtKey){
-      _cbtKey=key;
-      cb.innerHTML=`<div class="pt" id="ptp">${artFor({isP:1},'pg')}<div class="nm">Guesh</div><div class="hb"><i id="pgh"></i></div><div class="hv" id="pgt"></div></div><div class="pt foe" id="ptf">${artFor(fs,'pm')}<div class="nm" id="pmn"></div><div class="hb"><i id="pmh"></i></div><div class="hv" id="pmt"></div></div>`;
-    }
-    $('pgh').style.width=(100*P.hp/P.max)+'%';$('pgt').textContent=P.hp+' / '+P.max+' PV';
-    $('pmh').style.width=(100*fs.hp/fs.max)+'%';$('pmt').textContent=fs.hp+' / '+fs.max+' PV · CA '+fs.ac;$('pmn').textContent=fs.name;
-  }
+  $('cbt').hidden=true;
   /* barre de timing */
   if(TB.on){const kk=$('tbk');if(kk)kk.style.left=(tbPos()*100)+'%';if(!TB.tgt||TB.tgt!==P.target){}}
   else if(TB.rt&&performance.now()>TB.rt){TB.rt=0;$('tb').hidden=true}
 }
+
+Object.assign(LOOT,{
+ gobelin:{po:[.8,2,9],it:[['dague',.3],['bourse',.25],['potion',.15],['cuir',.06]]},
+ orc:{po:[.9,5,15],it:[['bourse',.3],['potion',.25],['dague2',.15],['casque',.08],['cuir',.1]]},
+ orcchef:{po:[1,25,50],it:[['potion2',.6],['anneau_prot',.35],['casque',.3],['dague2',.4]]}});
+
+function toggleThunder(){if(G.dead||!G.started)return;if(!spellOk('thunder')){log('Frappe tonitruante : ce sort n\'est pas préparé.','sys');return}if(!P.thunder&&P.slots<=0){log('Frappe tonitruante : plus d\'emplacement de sort.','sys');return}P.thunder=!P.thunder;log(P.thunder?'Frappe tonitruante armée : votre prochain coup résonnera comme le tonnerre (1 emplacement).':'Frappe tonitruante désarmée.','sys')}
+
+Object.assign(LOOT,{
+ compy:{po:[.2,1,3],it:[['dent',.5]]},raptor:{po:[.25,1,4],it:[['dent',.5],['queue',.3]]},deino:{po:[.6,3,10],it:[['dent',.6],['herbes',.3],['potion',.15]]},
+ frog:{po:[.2,1,3],it:[['herbes',.4]]},allo:{po:[1,20,40],it:[['potion2',.6],['dent',1],['anneau_prot',.2]]},
+ kobold:{po:[.7,1,6],it:[['dague',.15],['bourse',.2],['potion',.1]]},yuanti:{po:[.9,8,20],it:[['potion',.3],['cuir',.1],['bourse',.3],['potion2',.15]]},thay:{po:[1,10,25],it:[['parchemin',.4],['potion2',.3],['anneau_prec',.1]]}});
 /* ---- sprites ---- */
 const ARM_LOOK={
  mailles:{b:'#97a2aa',t:'#b8c2c9',p:'mail'},cuir:{b:'#8a5a3a',t:'#5a3a22',p:'stud'},ecailles:{b:'#9a7a4a',t:'#c9a45a',p:'scale'},
@@ -2516,6 +2532,8 @@ function renderScreen(i,ox,withP){
   s.enemies.forEach(e=>{if(e.sensed>0&&!e.dead){ctx.strokeStyle='rgba(190,90,255,'+Math.min(1,e.sensed/2)+')';ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(e.x,e.y+1,11,7,0,0,7);ctx.stroke();ctx.lineWidth=1}});
   /* barres de vie ennemies */
   s.enemies.forEach(e=>{if(e.dead||!e.aggro)return;R(ctx,e.x-6,e.y-13,12,2,'#220d0b');R(ctx,e.x-6,e.y-13,12*e.hp/e.max,2,'#d0463a')});
+  ctx.font='bold 6px '+FONT;ctx.textAlign='center';ctx.textBaseline='alphabetic';
+  s.enemies.forEach(e=>{if(e.dead||!e.aggro)return;const t=e===P.target;ctx.lineWidth=2;ctx.strokeStyle='#000';ctx.strokeText(e.name,e.x,e.y-16);ctx.fillStyle=t?'#ff8a7a':'#f0e6c8';ctx.fillText(e.name,e.x,e.y-16)});ctx.lineWidth=1;
   /* effets */
   for(const f of G.fx){
     if(f.k==='fire'){const p=1-f.t/.55,v={r:[1,0],l:[-1,0],u:[0,-1],d:[0,1]}[f.f],n=[-v[1],v[0]],L=50*Math.min(1,p*2.2);
@@ -2536,7 +2554,8 @@ function draw(){
 /* ---- interface ---- */
 function hud(){
   $('hpt').textContent=P.hp+' / '+P.max;$('hpb').style.width=(100*P.hp/P.max)+'%';
-  $('xpt').textContent=P.xp+' / '+(P.level<2?300:900);$('xpb').style.width=Math.max(0,Math.min(100,P.level<2?P.xp/3:(P.xp-300)/6))+'%';
+  {const lo=LVXP[P.level],hi=LVXP[P.level+1];$('xpt').textContent=hi?P.xp+' / '+hi:P.xp+' (niveau max)';$('xpb').style.width=hi?Math.max(0,Math.min(100,100*(P.xp-lo)/(hi-lo)))+'%':'100%'}
+  for(const k in P.stats)$('st_'+k).textContent=P.stats[k];
   $('rdt').textContent=G.inCombat?'Round '+G.round:'hors combat';$('rdb').style.width=G.inCombat?(100*Math.min(1,G.roundT/ROUND))+'%':'0';
   $('b1').innerHTML='1 · Imposition des mains<small>Réserve '+P.hands+'/'+P.hmax+' PV</small>';
   $('b2').innerHTML='2 · Souffle draconique<small>'+(P.breath?'2d6 feu · 1 utilisation':'épuisé')+'</small>';
@@ -2549,21 +2568,26 @@ function hud(){
   $('b8').innerHTML='8 · Bénédiction<small>+1d4 attaque · '+cs('bless')+'</small>';
   $('b9').innerHTML='9 · Faveur divine<small>+1d4 radiants · '+cs('favor')+'</small>';
   $('b10').innerHTML='Préparer les sorts<small>'+(P.prepOk?'possible maintenant':'après un repos long')+'</small>';
+  $('b11').innerHTML='0 · Serment de retour<small>'+(P.rcd>0?'recharge : '+Math.ceil(P.rcd/60)+' min':'point de réapparition · 15 min')+'</small>';$('b11').disabled=P.rcd>0||G.inCombat;
+  $('b12').innerHTML='H · Héroïsme<small>+2 PV/round · '+cs('hero')+'</small>';$('b13').innerHTML='T · Frappe tonitruante<small>'+(P.thunder?'armée : prochain coup':'2d6 tonnerre · 1 empl.')+'</small>';
+  $('b14').innerHTML='X · Arme sacrée<small>'+(P.swT>0?'actif · '+Math.ceil(P.swT)+' s':P.cd?'+'+Math.floor((P.stats.cha-10)/2)+' attaque · divinité canalisée':'épuisé')+'</small>';$('b15').innerHTML='V · Renvoi des impies<small>'+(P.cd?'morts-vivants en fuite':'épuisé')+'</small>';
+  $('b12').hidden=!spellOk('hero');$('b13').hidden=!spellOk('thunder');$('b14').hidden=P.level<3;$('b15').hidden=P.level<3;
+  $('b12').disabled=!P.slots||P.conc==='hero';$('b13').disabled=!P.thunder&&!P.slots;$('b13').classList.toggle('arm',P.thunder);$('b14').disabled=!P.cd||P.swT>0;$('b15').disabled=!P.cd;
   $('b6').hidden=!spellOk('cure');$('b7').hidden=!spellOk('faith');$('b8').hidden=!spellOk('bless');$('b9').hidden=!spellOk('favor');$('b10').hidden=P.level<2;
   $('b8').disabled=!P.slots||P.conc==='bless';$('b9').disabled=!P.slots||P.conc==='favor';$('b10').disabled=!P.prepOk||G.inCombat;
   $('conc').textContent=P.conc?SPELLS[P.conc].n+' · '+Math.ceil(P.cT)+' s':'aucune';
   $('sub').textContent='Drakéide d\'or · Paladin niveau '+P.level+(P.style?' · '+STYLES[P.style].n:'');
-  $('slt').textContent='●'.repeat(P.slots)+'○'.repeat(2-P.slots);$('b5').classList.toggle('arm',P.smite);
+  $('slt').textContent='●'.repeat(P.slots)+'○'.repeat(Math.max(0,P.smax-P.slots));$('b5').classList.toggle('arm',P.smite);
   $('b5').disabled=!P.smite&&!P.slots;$('b6').disabled=!P.slots||P.hp>=P.max;$('b7').disabled=!P.slots||P.conc==='faith';
   $('b1').disabled=!P.hands||P.hp>=P.max;$('b2').disabled=!P.breath;$('b3').disabled=!P.sense;$('b4').disabled=G.inCombat||P.sr>=2;
   drawMM();if(typeof uiTick==='function')uiTick();
   const tg=$('tag');tg.hidden=!(G.paused&&G.started&&!G.dead&&!G.menu&&!G.shop&&!G.lvl&&!G.neg);tg.textContent='PAUSE ACTIVE';
 }
 $('where').textContent=SCREENS[G.sc].name+' · '+SCREENS[G.sc].n;
-$('b1').onclick=layHands;$('b2').onclick=breath;$('b3').onclick=sense;$('b4').onclick=shortRest;$('b5').onclick=toggleSmite;$('b6').onclick=cure;$('b7').onclick=faithShield;$('b8').onclick=bless;$('b9').onclick=favor;$('b10').onclick=openPrep;
+$('b1').onclick=layHands;$('b2').onclick=breath;$('b3').onclick=sense;$('b4').onclick=shortRest;$('b5').onclick=toggleSmite;$('b6').onclick=cure;$('b7').onclick=faithShield;$('b8').onclick=bless;$('b9').onclick=favor;$('b10').onclick=openPrep;$('b11').onclick=anchor;$('b12').onclick=heroism;$('b13').onclick=toggleThunder;$('b14').onclick=sacredWeapon;$('b15').onclick=turnUnholy;
 function setPause(v){if(!G.started||G.dead)return;G.paused=v===undefined?!G.paused:v}
 function begin(){
-  if(G.dead){G.dead=false;P.hp=P.max;P.target=null;P.dest=null;G.inCombat=false;G.roundT=0;G.sc=1;G.talk=null;G.shop=null;$('shop').hidden=true;P.x=64;P.y=100;SCREENS.forEach(s=>s.enemies.forEach(e=>e.aggro=false));log('Guesh se relève, étourdi mais vivant.','good')}
+  if(G.dead){G.dead=false;P.hp=P.max;P.target=null;P.dest=null;G.inCombat=false;G.roundT=0;G.sc=(P.rp&&SCREENS[P.rp.sc])?P.rp.sc:1;G.talk=null;G.shop=null;$('shop').hidden=true;P.x=P.rp?P.rp.x:64;P.y=P.rp?P.rp.y:100;SCREENS.forEach(s=>s.enemies.forEach(e=>e.aggro=false));log('Guesh se relève, étourdi mais vivant.','good')}
   else{log('Guesh, paladin drakéide d\'or, niveau 1. Épée longue, cotte de mailles (CA 16). Touche I : inventaire.','sys');log('Le port est calme… trop calme. Explorez la rue de l\'ouest à l\'est.','sys')}
   renderBag();G.started=true;G.paused=false;$('ov').hidden=true;$('where').textContent=SCREENS[G.sc].name+' · '+SCREENS[G.sc].n;
 }
@@ -2582,7 +2606,7 @@ addEventListener('keydown',ev=>{
   if(!G.started||G.dead)return;
   if(G.talk){if(/^[1-9]$/.test(k))pick(+k-1);else if(k==='escape')closeTalk();else if(k==='e'||k==='enter'){}return}
   if(k==='e'||k==='enter'){if(!$('dlg').hidden&&!nearTargets().length)$('dlg').hidden=true;else tryInteract()}
-  else if(k==='i')openInv();else if(k==='m')toggleSound();else if(k==='1')layHands();else if(k==='2')breath();else if(k==='3')sense();else if(k==='4')shortRest();else if(k==='l')longRest();else if(k==='5')toggleSmite();else if(k==='6')cure();else if(k==='7')faithShield();else if(k==='8')bless();else if(k==='9')favor();else if(k==='p')openPrep();
+  else if(k==='i')openInv();else if(k==='m')toggleSound();else if(k==='1')layHands();else if(k==='2')breath();else if(k==='3')sense();else if(k==='4')shortRest();else if(k==='l')longRest();else if(k==='5')toggleSmite();else if(k==='6')cure();else if(k==='7')faithShield();else if(k==='8')bless();else if(k==='9')favor();else if(k==='p')openPrep();else if(k==='0')anchor();else if(k==='h')heroism();else if(k==='t')toggleThunder();else if(k==='x')sacredWeapon();else if(k==='v')turnUnholy();
   else if(k==='escape')openMenu();
 });
 addEventListener('keyup',ev=>{const k=KM[ev.key.toLowerCase()];if(k)keys[k]=false});

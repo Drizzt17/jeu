@@ -10,17 +10,17 @@ Expérience
 
 Round de combat**hors combat**
 
-FOR**17**
+FOR**0**
 
-DEX**10**
+DEX**0**
 
-CON**14**
+CON**0**
 
-INT**8**
+INT**0**
 
-SAG**12**
+SAG**0**
 
-CHA**14**
+CHA**0**
 
 CA **16**Maîtrise **+2**Attaque **+5**
 
@@ -44,4 +44,4 @@ Carte de Chult
 
 Son
 
-ZQSD/flèches ou clic : se déplacer · clic sur un ennemi : le cibler (combat manuel : clic gauche dans la zone verte pour frapper) · Espace pause active · Échap menu · E parler · I inventaire · L repos long · M son · 1-9 capacités et sorts
+ZQSD/flèches ou clic : se déplacer · clic sur un ennemi : le cibler (combat manuel : clic gauche dans la zone verte pour frapper) · Espace pause active · Échap menu · E parler · I inventaire · L repos long · M son · 0-9 H T X V capacités et sorts
